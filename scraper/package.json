@@ -1,0 +1,14 @@
+{
+  "name": "shopmy-scraper",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "scripts": {
+    "scrape": "node scraper.js",
+    "seed": "node seed.js",
+    "auth": "node scraper.js --auth-only"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
+    "playwright": "^1.44.0"
+  }
+}

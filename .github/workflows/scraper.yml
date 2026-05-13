@@ -1,0 +1,50 @@
+name: Daily ShopMy Scrape
+
+on:
+  schedule:
+    - cron: '0 7 * * *'   # 7:00 AM UTC = ~3 AM ET / midnight PT — after creators' overnight posts
+  workflow_dispatch:        # allow manual trigger from GitHub UI
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scraper/package-lock.json
+
+      - name: Install scraper dependencies
+        working-directory: scraper
+        run: npm install
+
+      - name: Install Playwright browser
+        working-directory: scraper
+        run: npx playwright install chromium --with-deps
+
+      - name: Restore ShopMy session
+        run: |
+          mkdir -p playwright/.auth
+          printf '%s' '${{ secrets.SHOPMY_SESSION }}' > playwright/.auth/session.json
+
+      - name: Run scraper
+        working-directory: scraper
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scraper.js
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-screenshots
+          path: playwright/screenshots/
+          retention-days: 7
