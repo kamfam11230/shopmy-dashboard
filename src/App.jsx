@@ -10,7 +10,7 @@ export default function App() {
   const [days, setDays] = useState(7);
   const [selectedCreators, setSelectedCreators] = useState(ALL_USERNAMES);
   const [sortBy, setSortBy] = useState('trend_score');
-  const [viewMode, setViewMode] = useState('best');
+  const [viewMode, setViewMode] = useState('both');
   const [minMomentum, setMinMomentum] = useState(50);
   const [data, setData] = useState({});
   const [diagnostics, setDiagnostics] = useState({});

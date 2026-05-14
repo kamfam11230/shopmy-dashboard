@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+const DEFAULT_VISIBLE_COUNT = 25;
+const VISIBLE_COUNT_OPTIONS = [25, 50, 75, 100];
+
 function daysSince(isoString) {
   if (!isoString) return Infinity;
   return (Date.now() - new Date(isoString).getTime()) / 86_400_000;
@@ -81,10 +84,12 @@ function bestProducts(data, visibleCreators, minMomentum) {
 }
 
 export default function BestProducts({ data, visibleCreators, minMomentum }) {
-  const [expanded, setExpanded] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(DEFAULT_VISIBLE_COUNT);
   const products = bestProducts(data, visibleCreators, minMomentum);
-  const visibleProducts = expanded ? products : products.slice(0, 25);
+  const visibleProducts = products.slice(0, visibleCount);
   const hiddenCount = Math.max(0, products.length - visibleProducts.length);
+  const canShowMore = visibleCount < products.length;
+  const canCollapse = visibleCount > DEFAULT_VISIBLE_COUNT;
 
   return (
     <section className="creator-panel best-products-panel">
@@ -93,10 +98,28 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
         <span className="panel-count">
           {visibleProducts.length} shown / {products.length} item{products.length !== 1 ? 's' : ''}
         </span>
-        {products.length > 25 && (
-          <button className="btn panel-action" onClick={() => setExpanded(v => !v)}>
-            {expanded ? 'Collapse' : `Show all ${products.length}`}
-          </button>
+        {products.length > DEFAULT_VISIBLE_COUNT && (
+          <div className="panel-actions">
+            <select
+              className="compact-select"
+              value={visibleCount}
+              onChange={e => setVisibleCount(Number(e.target.value))}
+            >
+              {VISIBLE_COUNT_OPTIONS.map(value => (
+                <option key={value} value={value}>{value}</option>
+              ))}
+            </select>
+            {canShowMore && (
+              <button className="btn panel-action" onClick={() => setVisibleCount(v => Math.min(v + 25, products.length))}>
+                Show more
+              </button>
+            )}
+            {canCollapse && (
+              <button className="btn panel-action" onClick={() => setVisibleCount(DEFAULT_VISIBLE_COUNT)}>
+                Collapse
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -151,9 +174,9 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
           </tbody>
         </table>
       )}
-      {!expanded && hiddenCount > 0 && (
+      {hiddenCount > 0 && (
         <div className="table-footer">
-          Showing top 25. {hiddenCount} more product{hiddenCount !== 1 ? 's' : ''} match this filter.
+          Showing top {visibleProducts.length}. {hiddenCount} more product{hiddenCount !== 1 ? 's' : ''} match this filter.
         </div>
       )}
     </section>
