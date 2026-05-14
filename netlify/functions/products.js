@@ -23,7 +23,7 @@ exports.handler = async (event) => {
   // Order by scan_date DESC so dedup keeps the freshest rank per product.
   const { data: rows, error } = await supabase
     .from('scans')
-    .select('creator_username, product_name, brand, category, price, product_url, posted_at, popular_rank, scan_date')
+    .select('creator_username, product_name, brand, category, price, product_url, image_url, posted_at, popular_rank, momentum_score, scan_date')
     .gte('posted_at', cutoff)
     .order('scan_date', { ascending: false });
 
@@ -36,7 +36,7 @@ exports.handler = async (event) => {
   const seen = new Set();
   const deduped = [];
   for (const row of rows) {
-    const key = `${row.creator_username}|${row.product_name}|${row.brand || ''}`;
+    const key = `${row.creator_username}|${row.product_url || row.product_name}|${row.brand || ''}`;
     if (!seen.has(key)) {
       seen.add(key);
       deduped.push(row);

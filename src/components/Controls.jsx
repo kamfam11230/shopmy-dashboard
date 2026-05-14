@@ -1,4 +1,5 @@
 import { CREATORS } from '../creators.js';
+import { useState } from 'react';
 
 const TIMELINE_OPTIONS = [
   { label: '24h',  days: 1 },
@@ -9,6 +10,8 @@ const TIMELINE_OPTIONS = [
 ];
 
 export default function Controls({ days, setDays, selectedCreators, setSelectedCreators, sortBy, setSortBy }) {
+  const [showCreators, setShowCreators] = useState(false);
+
   function toggle(username) {
     setSelectedCreators(prev => {
       const next = new Set(prev);
@@ -17,38 +20,48 @@ export default function Controls({ days, setDays, selectedCreators, setSelectedC
     });
   }
 
+  const selectedCount = selectedCreators.size;
+
   return (
     <div className="controls">
-      <div className="control-group">
-        <span className="control-label">Timeline</span>
-        <div className="btn-group">
-          {TIMELINE_OPTIONS.map(opt => (
-            <button
-              key={opt.days}
-              className={`btn${days === opt.days ? ' active' : ''}`}
-              onClick={() => setDays(opt.days)}
-            >
-              {opt.label}
+      <div className="controls-row">
+        <div className="control-group compact-group">
+          <span className="control-label">Timeline</span>
+          <div className="btn-group">
+            {TIMELINE_OPTIONS.map(opt => (
+              <button
+                key={opt.days}
+                className={`btn${days === opt.days ? ' active' : ''}`}
+                onClick={() => setDays(opt.days)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="control-group compact-group">
+          <span className="control-label">Sort</span>
+          <div className="btn-group">
+            <button className={`btn${sortBy === 'trend_score' ? ' active' : ''}`} onClick={() => setSortBy('trend_score')}>
+              Momentum
             </button>
-          ))}
+            <button className={`btn${sortBy === 'posted_at' ? ' active' : ''}`} onClick={() => setSortBy('posted_at')}>
+              Newest
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="control-group">
-        <span className="control-label">Sort within panels</span>
-        <div className="btn-group">
-          <button className={`btn${sortBy === 'trend_score' ? ' active' : ''}`} onClick={() => setSortBy('trend_score')}>
-            Trend Score
-          </button>
-          <button className={`btn${sortBy === 'posted_at' ? ' active' : ''}`} onClick={() => setSortBy('posted_at')}>
-            Post Date
+        <div className="control-group creator-toggle-group">
+          <span className="control-label">Creators</span>
+          <button className="btn creator-toggle" onClick={() => setShowCreators(v => !v)}>
+            {selectedCount}/{CREATORS.length} selected {showCreators ? 'Hide' : 'Show'}
           </button>
         </div>
       </div>
 
-      <div className="control-group" style={{ flexGrow: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-          <span className="control-label" style={{ marginBottom: 0 }}>Creators</span>
+      {showCreators && (
+        <div className="creator-filter-panel">
           <div className="select-links">
             <button onClick={() => setSelectedCreators(new Set(CREATORS.map(c => c.username)))}>
               All
@@ -57,21 +70,21 @@ export default function Controls({ days, setDays, selectedCreators, setSelectedC
               None
             </button>
           </div>
+          <div className="creator-checkboxes">
+            {CREATORS.map(c => (
+              <label key={c.username} className={`creator-chip${selectedCreators.has(c.username) ? ' checked' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={selectedCreators.has(c.username)}
+                  onChange={() => toggle(c.username)}
+                />
+                <span className="chip-dot" />
+                {c.name}
+              </label>
+            ))}
+          </div>
         </div>
-        <div className="creator-checkboxes">
-          {CREATORS.map(c => (
-            <label key={c.username} className={`creator-chip${selectedCreators.has(c.username) ? ' checked' : ''}`}>
-              <input
-                type="checkbox"
-                checked={selectedCreators.has(c.username)}
-                onChange={() => toggle(c.username)}
-              />
-              <span className="chip-dot" />
-              {c.name}
-            </label>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
