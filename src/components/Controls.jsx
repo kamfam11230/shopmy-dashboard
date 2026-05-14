@@ -15,7 +15,7 @@ const VIEW_OPTIONS = [
   { label: 'Both', value: 'both' },
 ];
 
-const MOMENTUM_OPTIONS = [1, 50, 60, 80, 100];
+const MOMENTUM_OPTIONS = [1, 50, 70, 80, 90];
 
 export default function Controls({
   days,

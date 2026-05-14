@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 const DEFAULT_VISIBLE_COUNT = 25;
 const VISIBLE_COUNT_OPTIONS = [25, 50, 75, 100];
+const SHOW_ALL_VALUE = 'all';
 
 function daysSince(isoString) {
   if (!isoString) return Infinity;
@@ -86,10 +87,11 @@ function bestProducts(data, visibleCreators, minMomentum) {
 export default function BestProducts({ data, visibleCreators, minMomentum }) {
   const [visibleCount, setVisibleCount] = useState(DEFAULT_VISIBLE_COUNT);
   const products = bestProducts(data, visibleCreators, minMomentum);
-  const visibleProducts = products.slice(0, visibleCount);
+  const effectiveVisibleCount = visibleCount === SHOW_ALL_VALUE ? products.length : visibleCount;
+  const visibleProducts = products.slice(0, effectiveVisibleCount);
   const hiddenCount = Math.max(0, products.length - visibleProducts.length);
-  const canShowMore = visibleCount < products.length;
-  const canCollapse = visibleCount > DEFAULT_VISIBLE_COUNT;
+  const canShowMore = effectiveVisibleCount < products.length;
+  const canCollapse = effectiveVisibleCount > DEFAULT_VISIBLE_COUNT;
 
   return (
     <section className="creator-panel best-products-panel">
@@ -103,14 +105,18 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
             <select
               className="compact-select"
               value={visibleCount}
-              onChange={e => setVisibleCount(Number(e.target.value))}
+              onChange={e => setVisibleCount(e.target.value === SHOW_ALL_VALUE ? SHOW_ALL_VALUE : Number(e.target.value))}
             >
               {VISIBLE_COUNT_OPTIONS.map(value => (
                 <option key={value} value={value}>{value}</option>
               ))}
+              <option value={SHOW_ALL_VALUE}>Show all</option>
             </select>
             {canShowMore && (
-              <button className="btn panel-action" onClick={() => setVisibleCount(v => Math.min(v + 25, products.length))}>
+              <button
+                className="btn panel-action"
+                onClick={() => setVisibleCount(v => Math.min((v === SHOW_ALL_VALUE ? products.length : v) + 25, products.length))}
+              >
                 Show more
               </button>
             )}
