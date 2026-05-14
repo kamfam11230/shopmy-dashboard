@@ -235,13 +235,14 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
                 </td>
                 <td>
                   <div className="product-copy">
+                    {item.brand && <div className="product-brand-mobile">{item.brand}</div>}
                     <div className="product-name">
                       {item.product_url
                         ? <a href={item.product_url} target="_blank" rel="noopener noreferrer">{item.product_name}</a>
                         : item.product_name}
                     </div>
                     <div className="product-meta-mobile">
-                      {[item.creator_username, item.brand, item.price].filter(Boolean).map(value => (
+                      {[item.creator_username, item.price].filter(Boolean).map(value => (
                         <span key={value}>{value}</span>
                       ))}
                     </div>
