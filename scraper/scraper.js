@@ -30,6 +30,7 @@ const CREATORS = [
 const DAYS_BACK = 30;
 const API_LIMIT = 100;
 const LATEST_MAX_PRODUCTS = 500;
+const POPULAR_MAX_PRODUCTS = 500;
 
 const args = process.argv.slice(2);
 const DEBUG = args.includes('--debug');
@@ -178,6 +179,40 @@ async function fetchLatestProducts(username, scanDate) {
   return { products, pagesFetched, stoppedReason };
 }
 
+async function fetchPagedProducts(username, tab, maxProducts) {
+  const products = [];
+  const seen = new Set();
+  let pagesFetched = 0;
+  let stoppedReason = 'max_cap_reached';
+
+  for (let page = 0; products.length < maxProducts; page++) {
+    const pageProducts = await fetchProducts(username, tab, { limit: API_LIMIT, page });
+    pagesFetched++;
+
+    const newProducts = [];
+    for (const product of pageProducts) {
+      const key = productKey(product);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      newProducts.push(product);
+    }
+
+    if (newProducts.length === 0) {
+      stoppedReason = 'no_new_products';
+      break;
+    }
+
+    products.push(...newProducts.slice(0, maxProducts - products.length));
+
+    if (pageProducts.length < API_LIMIT) {
+      stoppedReason = 'short_page';
+      break;
+    }
+  }
+
+  return { products, pagesFetched, stoppedReason };
+}
+
 function buildPopularRankMap(popularProducts) {
   const ranks = new Map();
   for (let i = 0; i < popularProducts.length; i++) {
@@ -253,8 +288,9 @@ async function scrapeCreator(username, scanDate) {
   const latestFetch = await fetchLatestProducts(username, scanDate);
   const latestProducts = latestFetch.products;
 
-  log(`[${username}] Fetching popular API (${API_LIMIT})`);
-  const popularProducts = await fetchProducts(username, 'popular', { limit: API_LIMIT });
+  log(`[${username}] Fetching popular API (${API_LIMIT}/page, max ${POPULAR_MAX_PRODUCTS})`);
+  const popularFetch = await fetchPagedProducts(username, 'popular', POPULAR_MAX_PRODUCTS);
+  const popularProducts = popularFetch.products;
 
   if (latestProducts.length === 0 && popularProducts.length === 0) {
     warn(`[${username}] Zero products returned for both latest and popular.`);
@@ -264,8 +300,11 @@ async function scrapeCreator(username, scanDate) {
   const d = feed.diagnostics;
   d.latest_pages_fetched = latestFetch.pagesFetched;
   d.latest_stopped_reason = latestFetch.stoppedReason;
+  d.popular_pages_fetched = popularFetch.pagesFetched;
+  d.popular_stopped_reason = popularFetch.stoppedReason;
   log(`[${username}] Latest fetched: ${d.latest_fetched}; recent kept: ${d.recent_kept}; popular fetched: ${d.popular_fetched}`);
   log(`[${username}] Latest pages: ${d.latest_pages_fetched}; stopped: ${d.latest_stopped_reason}`);
+  log(`[${username}] Popular pages: ${d.popular_pages_fetched}; total fetched: ${d.popular_fetched}; stopped: ${d.popular_stopped_reason}`);
   if (d.latest_window_incomplete) {
     warn(`[${username}] latest_window_incomplete=true; oldest latest item fetched is ${d.oldest_latest_age_days} days old`);
   }
