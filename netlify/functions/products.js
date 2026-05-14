@@ -23,6 +23,10 @@ function publicImageUrl(url) {
   }
 }
 
+function isVisibleRanked(row) {
+  return row.matched_in_popular && row.popular_rank != null && Number(row.momentum_score) > 0;
+}
+
 exports.handler = async (event) => {
   const headers = {
     'Content-Type': 'application/json',
@@ -71,14 +75,20 @@ exports.handler = async (event) => {
         recent_total: 0,
         ranked_total: 0,
         unranked_total: 0,
+        hidden_momentum_total: 0,
+        visible_ranked_total: 0,
       };
     }
 
     diagnostics[row.creator_username].recent_total++;
     if (!row.matched_in_popular || row.popular_rank == null) {
       diagnostics[row.creator_username].unranked_total++;
+    } else if (!isVisibleRanked(row)) {
+      diagnostics[row.creator_username].ranked_total++;
+      diagnostics[row.creator_username].hidden_momentum_total++;
     } else {
       diagnostics[row.creator_username].ranked_total++;
+      diagnostics[row.creator_username].visible_ranked_total++;
       if (!grouped[row.creator_username]) grouped[row.creator_username] = [];
       grouped[row.creator_username].push(row);
     }

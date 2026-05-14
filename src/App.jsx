@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { CREATORS } from './creators.js';
 import Controls from './components/Controls.jsx';
 import CreatorPanel from './components/CreatorPanel.jsx';
+import BestProducts from './components/BestProducts.jsx';
 
 const ALL_USERNAMES = new Set(CREATORS.map(c => c.username));
 
@@ -61,6 +62,9 @@ export default function App() {
       <div className="main">
         {loading && <div className="loading">Loading…</div>}
         {error && <div className="error-msg">Error: {error}</div>}
+        {!loading && !error && (
+          <BestProducts data={data} visibleCreators={visibleCreators} />
+        )}
         {!loading && !error && visibleCreators.map(creator => (
           <CreatorPanel
             key={creator.username}

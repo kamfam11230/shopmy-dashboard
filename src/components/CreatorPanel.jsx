@@ -37,6 +37,10 @@ function productScore(item) {
   return item.momentum_score ?? fallbackTrendScore(item.popular_rank, item.posted_at);
 }
 
+function isVisibleRanked(item) {
+  return item.matched_in_popular && item.popular_rank != null && Number(productScore(item)) > 0;
+}
+
 function ProductThumb({ item }) {
   const [broken, setBroken] = useState(false);
   if (!item.image_url || broken) return <div className="product-thumb placeholder" />;
@@ -99,11 +103,14 @@ function CountSummary({ diagnostics, rankedCount }) {
   const recentTotal = diagnostics?.recent_total ?? rankedCount;
   const rankedTotal = diagnostics?.ranked_total ?? rankedCount;
   const unrankedTotal = diagnostics?.unranked_total ?? Math.max(0, recentTotal - rankedTotal);
+  const hiddenMomentumTotal = diagnostics?.hidden_momentum_total ?? 0;
+  const visibleRankedTotal = diagnostics?.visible_ranked_total ?? rankedCount;
 
   return (
     <span className="panel-count">
-      {rankedTotal} ranked / {recentTotal} recent
+      {visibleRankedTotal} shown / {rankedTotal} ranked / {recentTotal} recent
       {unrankedTotal > 0 && <span className="unranked-count"> {unrankedTotal} unranked</span>}
+      {hiddenMomentumTotal > 0 && <span className="hidden-count"> {hiddenMomentumTotal} low momentum</span>}
     </span>
   );
 }
@@ -124,12 +131,13 @@ export default function CreatorPanel({ creator, products, diagnostics, sortBy })
   }
 
   const ranked = products
-    .filter(p => p.matched_in_popular && p.popular_rank != null)
+    .filter(isVisibleRanked)
     .map(p => ({ ...p, _score: productScore(p) }));
 
   const recentTotal = diagnostics?.recent_total ?? ranked.length;
   const rankedTotal = diagnostics?.ranked_total ?? ranked.length;
   const unrankedTotal = diagnostics?.unranked_total ?? Math.max(0, recentTotal - rankedTotal);
+  const hiddenMomentumTotal = diagnostics?.hidden_momentum_total ?? 0;
 
   function sortItems(items) {
     return [...items].sort((a, b) => {
@@ -154,7 +162,9 @@ export default function CreatorPanel({ creator, products, diagnostics, sortBy })
   }
 
   if (ranked.length === 0) {
-    const message = recentTotal > 0
+    const message = rankedTotal > 0 && hiddenMomentumTotal > 0
+      ? `${rankedTotal} ranked recent post${rankedTotal !== 1 ? 's' : ''} found, but none have positive momentum.`
+      : recentTotal > 0
       ? `${recentTotal} recent Latest post${recentTotal !== 1 ? 's' : ''} found, but none ranked in Popular yet.`
       : 'No recent Latest posts found in this timeframe.';
 
@@ -171,7 +181,7 @@ export default function CreatorPanel({ creator, products, diagnostics, sortBy })
           {message}
           {recentTotal > 0 && (
             <span className="no-data-detail">
-              Hidden by default: {unrankedTotal} unranked recent item{unrankedTotal !== 1 ? 's' : ''}.
+              Hidden by default: {unrankedTotal} unranked and {hiddenMomentumTotal} low-momentum recent item{unrankedTotal + hiddenMomentumTotal !== 1 ? 's' : ''}.
             </span>
           )}
         </div>
@@ -188,7 +198,7 @@ export default function CreatorPanel({ creator, products, diagnostics, sortBy })
         <a href={`https://shopmy.us/shop/${creator.username}`} target="_blank" rel="noopener noreferrer">
           ShopMy -&gt;
         </a>
-        <CountSummary diagnostics={diagnostics} rankedCount={rankedTotal} />
+        <CountSummary diagnostics={diagnostics} rankedCount={ranked.length} />
       </div>
 
       <table className="product-table">

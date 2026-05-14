@@ -157,6 +157,18 @@ body {
   border-radius: 10px;
 }
 .unranked-count { color: var(--yellow); }
+.hidden-count { color: var(--text-muted); }
+.best-products-panel {
+  border-color: #c7d2fe;
+}
+.creator-cell {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.creator-count {
+  color: var(--accent);
+  font-weight: 650;
+}
 .no-data {
   padding: 24px 18px;
   color: var(--text-muted);
@@ -316,4 +328,14 @@ body {
   .unranked-row { grid-template-columns: 26px minmax(160px, 1fr) 66px; }
   .unranked-row > .brand,
   .unranked-row > .price { display: none; }
+  .best-products-table th:nth-child(3),
+  .best-products-table td:nth-child(3) { display: table-cell; }
+  .best-products-table th:nth-child(4),
+  .best-products-table th:nth-child(5),
+  .best-products-table th:nth-child(6),
+  .best-products-table th:nth-child(7),
+  .best-products-table td.creator-cell,
+  .best-products-table td:nth-child(5),
+  .best-products-table td:nth-child(6),
+  .best-products-table td:nth-child(7) { display: none; }
 }

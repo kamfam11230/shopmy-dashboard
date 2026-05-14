@@ -24,7 +24,7 @@ const CREATORS = [
   'sarahsoliani', 'shanilechan', 'devora', 'gowncloset',
   'rivkirabinowitz', 'ladiesshoppinglinks', 'bigcityshopper',
   'styledbynomi', 'rachelw', 'shiraadar', 'looksbybecs',
-  'designerthreads', 'shopwithdass',
+  'designerthreads', 'shopwithdass', 'leahslinks', 'littlelinks',
 ];
 
 const DAYS_BACK = 30;
