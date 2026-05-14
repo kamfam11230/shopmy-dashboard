@@ -80,6 +80,24 @@ function canonicalProductUrl(product) {
   return id ? `https://shopmy.us/shop/product/${id}` : null;
 }
 
+function publicImageUrl(url) {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'production-shopmyshelf-uploads.s3.us-east-2.amazonaws.com') {
+      const key = parsed.pathname.replace(/^\/+/, '');
+      return key ? `https://static.shopmy.us/uploads/${key}` : null;
+    }
+    if (parsed.hostname === 'production-shopmyshelf-pins.s3.us-east-2.amazonaws.com') {
+      const key = parsed.pathname.replace(/^\/+/, '');
+      return key ? `https://static.shopmy.us/pins/${key}` : null;
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
 function formatPrice(value) {
   if (value == null || value === '') return null;
   if (typeof value === 'string') return value.startsWith('$') ? value : `$${value}`;
@@ -159,7 +177,7 @@ function normalizeLatestProduct(product, scanDate, popularRanks, latestWindowInc
     category: product.Category_name || product.Department_name || null,
     price: formatPrice(product.fallbackPrice),
     product_url: productUrl,
-    image_url: product.image || null,
+    image_url: publicImageUrl(product.image || product.images?.find(img => img?.isCover)?.image || product.images?.[0]?.image),
     posted_at: postedAt.toISOString(),
     age_days: roundedAge,
     timeframe_bucket: timeframeBucket(age),

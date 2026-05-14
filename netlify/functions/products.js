@@ -5,6 +5,24 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 );
 
+function publicImageUrl(url) {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'production-shopmyshelf-uploads.s3.us-east-2.amazonaws.com') {
+      const key = parsed.pathname.replace(/^\/+/, '');
+      return key ? `https://static.shopmy.us/uploads/${key}` : null;
+    }
+    if (parsed.hostname === 'production-shopmyshelf-pins.s3.us-east-2.amazonaws.com') {
+      const key = parsed.pathname.replace(/^\/+/, '');
+      return key ? `https://static.shopmy.us/pins/${key}` : null;
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
 exports.handler = async (event) => {
   const headers = {
     'Content-Type': 'application/json',
@@ -36,6 +54,8 @@ exports.handler = async (event) => {
   const seen = new Set();
   const deduped = [];
   for (const row of rows) {
+    if (row.popular_rank == null) continue;
+    row.image_url = publicImageUrl(row.image_url);
     const key = `${row.creator_username}|${row.product_url || row.product_name}|${row.brand || ''}`;
     if (!seen.has(key)) {
       seen.add(key);

@@ -38,7 +38,8 @@ function productScore(item) {
 }
 
 function ProductThumb({ item }) {
-  if (!item.image_url) return <div className="product-thumb placeholder" />;
+  const [broken, setBroken] = useState(false);
+  if (!item.image_url || broken) return <div className="product-thumb placeholder" />;
   return (
     <img
       className="product-thumb"
@@ -46,6 +47,7 @@ function ProductThumb({ item }) {
       alt=""
       loading="lazy"
       referrerPolicy="no-referrer"
+      onError={() => setBroken(true)}
     />
   );
 }
@@ -83,22 +85,6 @@ function ProductRow({ item }) {
   );
 }
 
-function UnrankedRow({ item }) {
-  return (
-    <tr>
-      <td colSpan={7}>
-        <div className="unranked-row">
-          <span className="rank-empty">-</span>
-          <ProductIdentity item={item} />
-          <span className="brand">{item.brand || '-'}</span>
-          <span className="price">{item.price || '-'}</span>
-          <span className="posted-time">{formatPosted(item.posted_at)}</span>
-        </div>
-      </td>
-    </tr>
-  );
-}
-
 const TABLE_COLS = [
   { key: 'popular_rank', label: 'Rank' },
   { key: 'product_name', label: 'Product' },
@@ -128,8 +114,6 @@ export default function CreatorPanel({ creator, products, sortBy }) {
     .filter(p => p.popular_rank != null)
     .map(p => ({ ...p, _score: productScore(p) }));
 
-  const unranked = products.filter(p => p.popular_rank == null);
-
   function sortItems(items) {
     return [...items].sort((a, b) => {
       let va, vb;
@@ -152,7 +136,7 @@ export default function CreatorPanel({ creator, products, sortBy }) {
     });
   }
 
-  if (products.length === 0) {
+  if (ranked.length === 0) {
     return (
       <div className="creator-panel">
         <div className="panel-header">
@@ -175,7 +159,7 @@ export default function CreatorPanel({ creator, products, sortBy }) {
         <a href={`https://shopmy.us/shop/${creator.username}`} target="_blank" rel="noopener noreferrer">
           ShopMy -&gt;
         </a>
-        <span className="panel-count">{products.length} item{products.length !== 1 ? 's' : ''}</span>
+        <span className="panel-count">{ranked.length} item{ranked.length !== 1 ? 's' : ''}</span>
       </div>
 
       <table className="product-table">
@@ -201,19 +185,6 @@ export default function CreatorPanel({ creator, products, sortBy }) {
           ))}
         </tbody>
       </table>
-
-      {unranked.length > 0 && (
-        <div className="watch-section">
-          <div className="watch-label">Too New to Rank - Watch These</div>
-          <table className="product-table">
-            <tbody>
-              {unranked.map((item, i) => (
-                <UnrankedRow key={`unranked-${item.product_url || i}`} item={item} />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 }
