@@ -19,21 +19,26 @@ export default function App() {
   const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/.netlify/functions/products?days=${days}`);
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      const json = await res.json();
-      setData(json.data || {});
-      setDiagnostics(json.diagnostics || {});
-      setLastUpdated(json.last_updated || null);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [days]);
+  setLoading(true);
+  setError(null);
+
+  const apiBase =
+    import.meta.env.VITE_API_BASE_URL || "/.netlify/functions";
+
+  try {
+    const res = await fetch(`${apiBase}/products?days=${days}`);
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+
+    const json = await res.json();
+    setData(json.data || {});
+    setDiagnostics(json.diagnostics || {});
+    setLastUpdated(json.last_updated || null);
+  } catch (e) {
+    setError(e.message);
+  } finally {
+    setLoading(false);
+  }
+}, [days]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
