@@ -4,12 +4,12 @@ const DEFAULT_VISIBLE_COUNT = 25;
 const VISIBLE_COUNT_OPTIONS = [25, 50, 75, 100];
 const SHOW_ALL_VALUE = 'all';
 const SORTABLE_COLS = [
+  { key: 'popular_rank', label: 'Popular Rank' },
+  { key: 'creator_username', label: 'Creator' },
+  { key: 'brand', label: 'Brand' },
+  { key: 'price', label: 'Price' },
   { key: 'posted_at', label: 'Posted' },
   { key: 'momentum_score', label: 'Momentum' },
-  { key: 'popular_rank', label: 'Popular Rank' },
-  { key: 'price', label: 'Price' },
-  { key: 'brand', label: 'Brand' },
-  { key: 'creator_username', label: 'Creator' },
 ];
 
 function daysSince(isoString) {
@@ -193,7 +193,7 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
                 className={sortKey === 'popular_rank' ? 'sorted' : ''}
                 onClick={() => handleHeaderClick('popular_rank')}
               >
-                Popular Rank
+                Rank
                 {sortKey === 'popular_rank' && <span className="sort-arrow">{sortDir === 'desc' ? 'v' : '^'}</span>}
               </th>
               <th>Photo</th>
@@ -237,6 +237,7 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
                     </div>
                     <div className="product-meta-mobile">
                       <span>{item.creator_username}</span>
+                      <span>{item.brand || '-'}</span>
                       <span>{item.price || '-'}</span>
                     </div>
                   </div>

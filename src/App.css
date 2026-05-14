@@ -350,14 +350,24 @@ body {
   .controls { padding: 6px 10px; }
   .controls-row { gap: 8px; flex-wrap: wrap; }
   .best-products-panel > .panel-header {
-    top: 74px;
+    top: 0;
+    z-index: 11;
     grid-template-columns: 1fr auto;
+    gap: 6px;
   }
   .best-products-panel > .panel-header .panel-count {
     justify-self: start;
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
   .best-products-panel > .panel-header .panel-actions {
     grid-column: 1 / -1;
+    grid-row: 3;
+    flex-wrap: wrap;
+  }
+  .best-products-panel > .panel-header > .panel-action {
+    grid-column: 2;
+    grid-row: 1;
   }
   .creator-toggle-group { margin-left: 0; }
   .control-label { display: none; }
@@ -384,6 +394,33 @@ body {
   .unranked-row > .price { display: none; }
   .best-products-table th:nth-child(3),
   .best-products-table td:nth-child(3) { display: table-cell; }
+  .best-products-table {
+    table-layout: fixed;
+  }
+  .best-products-table th,
+  .best-products-table td {
+    padding: 5px 4px;
+  }
+  .best-products-table th:nth-child(1),
+  .best-products-table td:nth-child(1) {
+    width: 38px;
+  }
+  .best-products-table th:nth-child(2),
+  .best-products-table td:nth-child(2) {
+    display: none;
+  }
+  .best-products-table th:nth-child(3),
+  .best-products-table td:nth-child(3) {
+    width: auto;
+  }
+  .best-products-table th:nth-child(8),
+  .best-products-table td:nth-child(8) {
+    width: 52px;
+  }
+  .best-products-table th:nth-child(9),
+  .best-products-table td:nth-child(9) {
+    width: 66px;
+  }
   .best-products-table th:nth-child(4),
   .best-products-table th:nth-child(5),
   .best-products-table th:nth-child(6),
@@ -392,4 +429,14 @@ body {
   .best-products-table td:nth-child(5),
   .best-products-table td:nth-child(6),
   .best-products-table td:nth-child(7) { display: none; }
+  .best-products-table .product-name {
+    max-width: none;
+  }
+  .best-products-table .product-meta-mobile {
+    flex-wrap: wrap;
+    row-gap: 1px;
+  }
+  .best-products-table .trend-score {
+    font-size: .76rem;
+  }
 }
