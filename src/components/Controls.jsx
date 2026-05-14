@@ -2,17 +2,11 @@ import { CREATORS } from '../creators.js';
 import { useState } from 'react';
 
 const TIMELINE_OPTIONS = [
-  { label: '24h',  days: 1 },
-  { label: '3d',   days: 3 },
-  { label: '7d',   days: 7 },
-  { label: '14d',  days: 14 },
-  { label: '30d',  days: 30 },
-];
-
-const VIEW_OPTIONS = [
-  { label: 'Best Products', value: 'best' },
-  { label: 'By Creator', value: 'creators' },
-  { label: 'Both', value: 'both' },
+  { label: '24 hours', days: 1 },
+  { label: '2 days',   days: 2 },
+  { label: '4 days',   days: 4 },
+  { label: '7 days',   days: 7 },
+  { label: '30 days',  days: 30 },
 ];
 
 const MOMENTUM_OPTIONS = [1, 50, 70, 80, 90];
@@ -24,8 +18,6 @@ export default function Controls({
   setSelectedCreators,
   sortBy,
   setSortBy,
-  viewMode,
-  setViewMode,
   minMomentum,
   setMinMomentum,
 }) {
@@ -68,21 +60,6 @@ export default function Controls({
             <button className={`btn${sortBy === 'posted_at' ? ' active' : ''}`} onClick={() => setSortBy('posted_at')}>
               Newest
             </button>
-          </div>
-        </div>
-
-        <div className="control-group compact-group">
-          <span className="control-label">View</span>
-          <div className="btn-group">
-            {VIEW_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                className={`btn${viewMode === opt.value ? ' active' : ''}`}
-                onClick={() => setViewMode(opt.value)}
-              >
-                {opt.label}
-              </button>
-            ))}
           </div>
         </div>
 

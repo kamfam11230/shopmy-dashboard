@@ -3,6 +3,14 @@ import { useState } from 'react';
 const DEFAULT_VISIBLE_COUNT = 25;
 const VISIBLE_COUNT_OPTIONS = [25, 50, 75, 100];
 const SHOW_ALL_VALUE = 'all';
+const SORTABLE_COLS = [
+  { key: 'posted_at', label: 'Posted' },
+  { key: 'momentum_score', label: 'Momentum' },
+  { key: 'popular_rank', label: 'Popular Rank' },
+  { key: 'price', label: 'Price' },
+  { key: 'brand', label: 'Brand' },
+  { key: 'creator_username', label: 'Creator' },
+];
 
 function daysSince(isoString) {
   if (!isoString) return Infinity;
@@ -50,6 +58,12 @@ function productKey(item) {
   return `${item.product_url || item.product_name}|${item.brand || ''}`;
 }
 
+function priceValue(price) {
+  if (price == null) return null;
+  const value = Number(String(price).replace(/[^0-9.]+/g, ''));
+  return Number.isFinite(value) ? value : null;
+}
+
 function isVisibleRanked(item) {
   return item.matched_in_popular && item.popular_rank != null && Number(item.momentum_score) > 0;
 }
@@ -80,18 +94,55 @@ function bestProducts(data, visibleCreators, minMomentum) {
   }
 
   return [...bestByProduct.values()]
-    .map(item => ({ ...item, creator_count: item._creatorSet.size }))
-    .sort((a, b) => Number(b.momentum_score) - Number(a.momentum_score));
+    .map(item => ({ ...item, creator_count: item._creatorSet.size }));
+}
+
+function sortProducts(products, sortKey, sortDir) {
+  return [...products].sort((a, b) => {
+    let va;
+    let vb;
+
+    if (sortKey === 'posted_at') {
+      va = new Date(a.posted_at || 0).getTime();
+      vb = new Date(b.posted_at || 0).getTime();
+    } else if (sortKey === 'price') {
+      va = priceValue(a.price);
+      vb = priceValue(b.price);
+    } else if (sortKey === 'brand' || sortKey === 'creator_username') {
+      va = String(a[sortKey] || '');
+      vb = String(b[sortKey] || '');
+      return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    } else {
+      va = Number(a[sortKey]);
+      vb = Number(b[sortKey]);
+    }
+
+    va = Number.isFinite(va) ? va : sortDir === 'asc' ? Infinity : -Infinity;
+    vb = Number.isFinite(vb) ? vb : sortDir === 'asc' ? Infinity : -Infinity;
+    return sortDir === 'asc' ? va - vb : vb - va;
+  });
 }
 
 export default function BestProducts({ data, visibleCreators, minMomentum }) {
-  const [visibleCount, setVisibleCount] = useState(DEFAULT_VISIBLE_COUNT);
-  const products = bestProducts(data, visibleCreators, minMomentum);
+  const [visibleCount, setVisibleCount] = useState(SHOW_ALL_VALUE);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [sortKey, setSortKey] = useState('momentum_score');
+  const [sortDir, setSortDir] = useState('desc');
+  const products = sortProducts(bestProducts(data, visibleCreators, minMomentum), sortKey, sortDir);
   const effectiveVisibleCount = visibleCount === SHOW_ALL_VALUE ? products.length : visibleCount;
   const visibleProducts = products.slice(0, effectiveVisibleCount);
   const hiddenCount = Math.max(0, products.length - visibleProducts.length);
   const canShowMore = effectiveVisibleCount < products.length;
   const canCollapse = effectiveVisibleCount > DEFAULT_VISIBLE_COUNT;
+
+  function handleHeaderClick(key) {
+    if (sortKey === key) {
+      setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  }
 
   return (
     <section className="creator-panel best-products-panel">
@@ -100,7 +151,7 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
         <span className="panel-count">
           {visibleProducts.length} shown / {products.length} item{products.length !== 1 ? 's' : ''}
         </span>
-        {products.length > DEFAULT_VISIBLE_COUNT && (
+        {isExpanded && products.length > DEFAULT_VISIBLE_COUNT && (
           <div className="panel-actions">
             <select
               className="compact-select"
@@ -127,23 +178,47 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
             )}
           </div>
         )}
+        <button className="btn panel-action" onClick={() => setIsExpanded(v => !v)}>
+          {isExpanded ? 'Hide ^' : 'Show v'}
+        </button>
       </div>
 
-      {products.length === 0 ? (
+      {isExpanded && products.length === 0 ? (
         <div className="no-data">No ranked products at momentum {minMomentum}+ in this timeframe.</div>
-      ) : (
+      ) : isExpanded ? (
         <table className="product-table best-products-table">
           <thead>
             <tr>
-              <th>Rank</th>
+              <th
+                className={sortKey === 'popular_rank' ? 'sorted' : ''}
+                onClick={() => handleHeaderClick('popular_rank')}
+              >
+                Popular Rank
+                {sortKey === 'popular_rank' && <span className="sort-arrow">{sortDir === 'desc' ? 'v' : '^'}</span>}
+              </th>
               <th>Photo</th>
               <th>Product</th>
-              <th>Creator</th>
-              <th>Brand</th>
-              <th>Price</th>
+              {SORTABLE_COLS.filter(col => !['popular_rank', 'posted_at', 'momentum_score'].includes(col.key)).map(col => (
+                <th
+                  key={col.key}
+                  className={sortKey === col.key ? 'sorted' : ''}
+                  onClick={() => handleHeaderClick(col.key)}
+                >
+                  {col.label}
+                  {sortKey === col.key && <span className="sort-arrow">{sortDir === 'desc' ? 'v' : '^'}</span>}
+                </th>
+              ))}
               <th>Category</th>
-              <th>Posted</th>
-              <th>Momentum</th>
+              {SORTABLE_COLS.filter(col => ['posted_at', 'momentum_score'].includes(col.key)).map(col => (
+                <th
+                  key={col.key}
+                  className={sortKey === col.key ? 'sorted' : ''}
+                  onClick={() => handleHeaderClick(col.key)}
+                >
+                  {col.label}
+                  {sortKey === col.key && <span className="sort-arrow">{sortDir === 'desc' ? 'v' : '^'}</span>}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -179,8 +254,8 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
             ))}
           </tbody>
         </table>
-      )}
-      {hiddenCount > 0 && (
+      ) : null}
+      {isExpanded && hiddenCount > 0 && (
         <div className="table-footer">
           Showing top {visibleProducts.length}. {hiddenCount} more product{hiddenCount !== 1 ? 's' : ''} match this filter.
         </div>
