@@ -4,12 +4,12 @@ const DEFAULT_VISIBLE_COUNT = 25;
 const VISIBLE_COUNT_OPTIONS = [25, 50, 75, 100];
 const SHOW_ALL_VALUE = 'all';
 const SORTABLE_COLS = [
-  { key: 'popular_rank', label: 'Popular Rank' },
+  { key: 'popular_rank', label: 'Rank' },
   { key: 'creator_username', label: 'Creator' },
   { key: 'brand', label: 'Brand' },
   { key: 'price', label: 'Price' },
   { key: 'posted_at', label: 'Posted' },
-  { key: 'momentum_score', label: 'Momentum' },
+  { key: 'momentum_score', label: 'Score' },
 ];
 
 function daysSince(isoString) {
@@ -196,8 +196,8 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
                 Rank
                 {sortKey === 'popular_rank' && <span className="sort-arrow">{sortDir === 'desc' ? 'v' : '^'}</span>}
               </th>
-              <th>Photo</th>
-              <th>Product</th>
+              <th aria-label="Image"></th>
+              <th aria-label="Product"></th>
               {SORTABLE_COLS.filter(col => !['popular_rank', 'posted_at', 'momentum_score'].includes(col.key)).map(col => (
                 <th
                   key={col.key}
@@ -215,12 +215,7 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
                   className={sortKey === col.key ? 'sorted' : ''}
                   onClick={() => handleHeaderClick(col.key)}
                 >
-                  {col.key === 'momentum_score' ? (
-                    <>
-                      <span className="desktop-label">Momentum</span>
-                      <span className="mobile-label">Score</span>
-                    </>
-                  ) : col.label}
+                  {col.label}
                   {sortKey === col.key && <span className="sort-arrow">{sortDir === 'desc' ? 'v' : '^'}</span>}
                 </th>
               ))}
