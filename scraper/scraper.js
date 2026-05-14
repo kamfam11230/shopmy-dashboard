@@ -7,9 +7,6 @@
  *   node scraper.js --creator themommydictionary  # single creator
  */
 
-const { createClient } = require('@supabase/supabase-js');
-const ws = require('ws');
-
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const SHOPMY_HEADERS = {
@@ -276,7 +273,7 @@ async function scrapeCreator(username, scanDate) {
   return feed;
 }
 
-async function upsertRows(supabase, username, scanDate, rows) {
+async function upsertRows(username, scanDate, rows) {
   if (!rows.length) {
     warn(`[${username}] No recent rows to upsert.`);
     return;
@@ -301,15 +298,28 @@ async function upsertRows(supabase, username, scanDate, rows) {
     latest_window_incomplete: r.latest_window_incomplete,
   }));
 
-  const { error } = await supabase
-    .from('scans')
-    .upsert(records, { onConflict: 'creator_username,scan_date,product_url' });
+  const params = new URLSearchParams({
+    on_conflict: 'creator_username,scan_date,product_url',
+  });
+  const endpoint = `${SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/scans?${params.toString()}`;
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_SERVICE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates',
+    },
+    body: JSON.stringify(records),
+  });
 
-  if (error) {
-    warn(`[${username}] Upsert error:`, error.message);
-  } else {
-    log(`[${username}] Upserted ${records.length} recent rows for ${dateStr}`);
+  if (!res.ok) {
+    const text = await res.text();
+    warn(`[${username}] Upsert error:`, `HTTP ${res.status} ${text}`);
+    return;
   }
+
+  log(`[${username}] Upserted ${records.length} recent rows for ${dateStr}`);
 }
 
 async function main() {
@@ -317,18 +327,6 @@ async function main() {
     console.error('Set SUPABASE_URL and SUPABASE_SERVICE_KEY env vars before scraping, or run with --dry-run.');
     process.exit(1);
   }
-
-  const supabase = (!DRY_RUN && SUPABASE_URL && SUPABASE_SERVICE_KEY)
-    ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-      realtime: {
-        transport: ws,
-      },
-    })
-    : null;
 
   const creators = CREATOR_FILTER ? [CREATOR_FILTER] : CREATORS;
   const scanDate = new Date();
@@ -339,8 +337,8 @@ async function main() {
       log(`\n-- ${username} ---------------------`);
       const { rows, diagnostics } = await scrapeCreator(username, scanDate);
 
-      if (supabase) {
-        await upsertRows(supabase, username, scanDate, rows);
+      if (!DRY_RUN) {
+        await upsertRows(username, scanDate, rows);
       } else {
         console.log(JSON.stringify({ username, diagnostics, rows }, null, 2));
       }
