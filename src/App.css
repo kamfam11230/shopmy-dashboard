@@ -156,11 +156,19 @@ body {
   padding: 1px 7px;
   border-radius: 10px;
 }
+.unranked-count { color: var(--yellow); }
 .no-data {
   padding: 24px 18px;
   color: var(--text-muted);
   font-size: .85rem;
   text-align: center;
+}
+.no-data.pending-rank { color: var(--yellow); }
+.no-data-detail {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: .76rem;
 }
 
 .product-table { width: 100%; border-collapse: collapse; font-size: .78rem; }

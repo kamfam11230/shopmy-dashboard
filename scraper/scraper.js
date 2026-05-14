@@ -1,22 +1,22 @@
 /**
- * ShopMy scraper - Playwright session + ShopMy products API
+ * ShopMy scraper - ShopMy products API
  *
  * Usage:
  *   node scraper.js              # scrape all creators and upsert to Supabase
- *   node scraper.js --auth-only  # open browser to log in and save session, then exit
- *   node scraper.js --debug      # headful browser + verbose logging
  *   node scraper.js --dry-run    # scrape and print JSON without Supabase
  *   node scraper.js --creator themommydictionary  # single creator
  */
 
-const { chromium } = require('playwright');
 const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const path = require('path');
 
-const SESSION_FILE = path.join(__dirname, '../playwright/.auth/session.json');
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const SHOPMY_HEADERS = {
+  accept: 'application/json',
+  origin: 'https://shopmy.us',
+  referer: 'https://shopmy.us/',
+  'user-agent': 'Mozilla/5.0',
+};
 
 const CREATORS = [
   'betweencarpools', 'faigyrabinowitz', 'rachelshalam', 'alysondweck',
@@ -31,10 +31,8 @@ const CREATORS = [
 
 const DAYS_BACK = 30;
 const API_LIMIT = 100;
-const AUTH_TIMEOUT_MS = 180_000;
 
 const args = process.argv.slice(2);
-const AUTH_ONLY = args.includes('--auth-only');
 const DEBUG = args.includes('--debug');
 const DRY_RUN = args.includes('--dry-run');
 const CREATOR_FILTER = (() => {
@@ -48,31 +46,6 @@ function log(...msg) {
 
 function warn(...msg) {
   console.warn('WARN', ...msg);
-}
-
-async function ensureSession(browser) {
-  if (fs.existsSync(SESSION_FILE)) {
-    log('Loading saved session from', SESSION_FILE);
-    return browser.newContext({ storageState: SESSION_FILE });
-  }
-
-  log('No session found - opening browser for manual login...');
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  await page.goto('https://shopmy.us/login', { waitUntil: 'domcontentloaded' });
-  log('Please log in to ShopMy in the browser window. Waiting up to 3 minutes...');
-  await page.waitForFunction(
-    () => !window.location.pathname.startsWith('/login'),
-    { timeout: AUTH_TIMEOUT_MS }
-  );
-  log('Login detected - saving session.');
-  fs.mkdirSync(path.dirname(SESSION_FILE), { recursive: true });
-  await context.storageState({ path: SESSION_FILE });
-  return context;
-}
-
-async function checkSessionValid(page) {
-  return !page.url().includes('/login');
 }
 
 function canonicalProductUrl(product) {
@@ -125,28 +98,25 @@ function momentumScore(age, popularRank) {
   return Math.round((recencyScore + popularityScore) * 100) / 100;
 }
 
-async function fetchProducts(page, username, tab, limit = API_LIMIT) {
+async function fetchProducts(username, tab, limit = API_LIMIT) {
   const apiUrl = `https://apiv3.shopmy.us/api/Shop/products?Curator_username=${encodeURIComponent(username)}&tab=${tab}&limit=${limit}&searchVariant=similar-products-v1`;
-  const response = await page.evaluate(async (url) => {
-    const res = await fetch(url, {
-      credentials: 'include',
-      headers: { accept: 'application/json' },
-    });
-    const text = await res.text();
-    let body;
-    try {
-      body = JSON.parse(text);
-    } catch {
-      body = { raw: text };
-    }
-    return { ok: res.ok, status: res.status, body };
-  }, apiUrl);
-
-  if (!response.ok || !Array.isArray(response.body.results)) {
-    throw new Error(`ShopMy ${tab} API failed (${response.status})`);
+  const res = await fetch(apiUrl, { headers: SHOPMY_HEADERS });
+  const text = await res.text();
+  let body;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    body = { raw: text };
   }
 
-  return response.body.results;
+  const results = Array.isArray(body.results) ? body.results : [];
+  log(`[${username}] ${tab} success=${res.ok} results=${results.length}`);
+
+  if (!res.ok || !Array.isArray(body.results)) {
+    throw new Error(`ShopMy ${tab} API failed (${res.status})`);
+  }
+
+  return results;
 }
 
 function buildPopularRankMap(popularProducts) {
@@ -177,7 +147,7 @@ function normalizeLatestProduct(product, scanDate, popularRanks, latestWindowInc
     category: product.Category_name || product.Department_name || null,
     price: formatPrice(product.fallbackPrice),
     product_url: productUrl,
-    image_url: publicImageUrl(product.image || product.images?.find(img => img?.isCover)?.image || product.images?.[0]?.image),
+    image_url: publicImageUrl(product.image || product.images?.find(img => img?.isFeatured)?.image || product.images?.[0]?.image),
     posted_at: postedAt.toISOString(),
     age_days: roundedAge,
     timeframe_bucket: timeframeBucket(age),
@@ -223,12 +193,16 @@ function buildRecentFeed(latestProducts, popularProducts, scanDate) {
   };
 }
 
-async function scrapeCreator(page, username, scanDate) {
+async function scrapeCreator(username, scanDate) {
   log(`[${username}] Fetching latest API (${API_LIMIT})`);
-  const latestProducts = await fetchProducts(page, username, 'latest');
+  const latestProducts = await fetchProducts(username, 'latest');
 
   log(`[${username}] Fetching popular API (${API_LIMIT})`);
-  const popularProducts = await fetchProducts(page, username, 'popular');
+  const popularProducts = await fetchProducts(username, 'popular');
+
+  if (latestProducts.length === 0 && popularProducts.length === 0) {
+    warn(`[${username}] Zero products returned for both latest and popular.`);
+  }
 
   const feed = buildRecentFeed(latestProducts, popularProducts, scanDate);
   const d = feed.diagnostics;
@@ -278,37 +252,13 @@ async function upsertRows(supabase, username, scanDate, rows) {
 
 async function main() {
   if (!DRY_RUN && (!SUPABASE_URL || !SUPABASE_SERVICE_KEY)) {
-    if (!AUTH_ONLY) {
-      console.error('Set SUPABASE_URL and SUPABASE_SERVICE_KEY env vars before scraping, or run with --dry-run.');
-      process.exit(1);
-    }
+    console.error('Set SUPABASE_URL and SUPABASE_SERVICE_KEY env vars before scraping, or run with --dry-run.');
+    process.exit(1);
   }
 
   const supabase = (!DRY_RUN && SUPABASE_URL && SUPABASE_SERVICE_KEY)
     ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
     : null;
-
-  const browser = await chromium.launch({ headless: !DEBUG && !AUTH_ONLY });
-  const context = await ensureSession(browser);
-
-  if (AUTH_ONLY) {
-    log('Session saved. Exiting.');
-    await browser.close();
-    return;
-  }
-
-  const page = await context.newPage();
-  page.setDefaultTimeout(60_000);
-
-  await page.goto('https://shopmy.us/shop/discover/curators', {
-    waitUntil: 'domcontentloaded',
-    timeout: 30_000,
-  });
-  if (!(await checkSessionValid(page))) {
-    console.error('Session expired. Delete playwright/.auth/session.json and re-run with --auth-only to refresh it.');
-    await browser.close();
-    process.exit(1);
-  }
 
   const creators = CREATOR_FILTER ? [CREATOR_FILTER] : CREATORS;
   const scanDate = new Date();
@@ -317,7 +267,7 @@ async function main() {
   for (const username of creators) {
     try {
       log(`\n-- ${username} ---------------------`);
-      const { rows, diagnostics } = await scrapeCreator(page, username, scanDate);
+      const { rows, diagnostics } = await scrapeCreator(username, scanDate);
 
       if (supabase) {
         await upsertRows(supabase, username, scanDate, rows);
@@ -331,7 +281,6 @@ async function main() {
     }
   }
 
-  await browser.close();
   log(`\nDone. ${successCount}/${creators.length} creators scraped successfully.`);
   if (successCount < creators.length) process.exit(1);
 }

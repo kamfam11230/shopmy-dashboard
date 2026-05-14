@@ -41,7 +41,7 @@ exports.handler = async (event) => {
   // Order by scan_date DESC so dedup keeps the freshest rank per product.
   const { data: rows, error } = await supabase
     .from('scans')
-    .select('creator_username, product_name, brand, category, price, product_url, image_url, posted_at, popular_rank, momentum_score, scan_date')
+    .select('creator_username, product_name, brand, category, price, product_url, image_url, posted_at, popular_rank, matched_in_popular, momentum_score, scan_date')
     .gte('posted_at', cutoff)
     .order('scan_date', { ascending: false });
 
@@ -49,12 +49,11 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
   }
 
-  // Deduplicate: per (creator, product_name, brand) keep the row with the most-recent scan_date.
+  // Deduplicate: per (creator, product) keep the row with the most-recent scan_date.
   // Since rows are already sorted scan_date DESC, first-seen wins.
   const seen = new Set();
   const deduped = [];
   for (const row of rows) {
-    if (row.popular_rank == null) continue;
     row.image_url = publicImageUrl(row.image_url);
     const key = `${row.creator_username}|${row.product_url || row.product_name}|${row.brand || ''}`;
     if (!seen.has(key)) {
@@ -63,12 +62,27 @@ exports.handler = async (event) => {
     }
   }
 
-  // Group by creator
+  const diagnostics = {};
   const grouped = {};
   let latestScanDate = null;
   for (const row of deduped) {
-    if (!grouped[row.creator_username]) grouped[row.creator_username] = [];
-    grouped[row.creator_username].push(row);
+    if (!diagnostics[row.creator_username]) {
+      diagnostics[row.creator_username] = {
+        recent_total: 0,
+        ranked_total: 0,
+        unranked_total: 0,
+      };
+    }
+
+    diagnostics[row.creator_username].recent_total++;
+    if (!row.matched_in_popular || row.popular_rank == null) {
+      diagnostics[row.creator_username].unranked_total++;
+    } else {
+      diagnostics[row.creator_username].ranked_total++;
+      if (!grouped[row.creator_username]) grouped[row.creator_username] = [];
+      grouped[row.creator_username].push(row);
+    }
+
     if (!latestScanDate || row.scan_date > latestScanDate) {
       latestScanDate = row.scan_date;
     }
@@ -77,6 +91,6 @@ exports.handler = async (event) => {
   return {
     statusCode: 200,
     headers,
-    body: JSON.stringify({ data: grouped, last_updated: latestScanDate }),
+    body: JSON.stringify({ data: grouped, diagnostics, last_updated: latestScanDate }),
   };
 };

@@ -95,7 +95,20 @@ const TABLE_COLS = [
   { key: 'trend_score',  label: 'Momentum' },
 ];
 
-export default function CreatorPanel({ creator, products, sortBy }) {
+function CountSummary({ diagnostics, rankedCount }) {
+  const recentTotal = diagnostics?.recent_total ?? rankedCount;
+  const rankedTotal = diagnostics?.ranked_total ?? rankedCount;
+  const unrankedTotal = diagnostics?.unranked_total ?? Math.max(0, recentTotal - rankedTotal);
+
+  return (
+    <span className="panel-count">
+      {rankedTotal} ranked / {recentTotal} recent
+      {unrankedTotal > 0 && <span className="unranked-count"> {unrankedTotal} unranked</span>}
+    </span>
+  );
+}
+
+export default function CreatorPanel({ creator, products, diagnostics, sortBy }) {
   const [localSort, setLocalSort] = useState(null);
   const [sortDir, setSortDir] = useState('desc');
 
@@ -111,8 +124,12 @@ export default function CreatorPanel({ creator, products, sortBy }) {
   }
 
   const ranked = products
-    .filter(p => p.popular_rank != null)
+    .filter(p => p.matched_in_popular && p.popular_rank != null)
     .map(p => ({ ...p, _score: productScore(p) }));
+
+  const recentTotal = diagnostics?.recent_total ?? ranked.length;
+  const rankedTotal = diagnostics?.ranked_total ?? ranked.length;
+  const unrankedTotal = diagnostics?.unranked_total ?? Math.max(0, recentTotal - rankedTotal);
 
   function sortItems(items) {
     return [...items].sort((a, b) => {
@@ -137,6 +154,10 @@ export default function CreatorPanel({ creator, products, sortBy }) {
   }
 
   if (ranked.length === 0) {
+    const message = recentTotal > 0
+      ? `${recentTotal} recent Latest post${recentTotal !== 1 ? 's' : ''} found, but none ranked in Popular yet.`
+      : 'No recent Latest posts found in this timeframe.';
+
     return (
       <div className="creator-panel">
         <div className="panel-header">
@@ -144,8 +165,16 @@ export default function CreatorPanel({ creator, products, sortBy }) {
           <a href={`https://shopmy.us/shop/${creator.username}`} target="_blank" rel="noopener noreferrer">
             ShopMy -&gt;
           </a>
+          <CountSummary diagnostics={diagnostics} rankedCount={ranked.length} />
         </div>
-        <div className="no-data">No posts in this timeframe</div>
+        <div className={`no-data${recentTotal > 0 ? ' pending-rank' : ''}`}>
+          {message}
+          {recentTotal > 0 && (
+            <span className="no-data-detail">
+              Hidden by default: {unrankedTotal} unranked recent item{unrankedTotal !== 1 ? 's' : ''}.
+            </span>
+          )}
+        </div>
       </div>
     );
   }
@@ -159,7 +188,7 @@ export default function CreatorPanel({ creator, products, sortBy }) {
         <a href={`https://shopmy.us/shop/${creator.username}`} target="_blank" rel="noopener noreferrer">
           ShopMy -&gt;
         </a>
-        <span className="panel-count">{ranked.length} item{ranked.length !== 1 ? 's' : ''}</span>
+        <CountSummary diagnostics={diagnostics} rankedCount={rankedTotal} />
       </div>
 
       <table className="product-table">

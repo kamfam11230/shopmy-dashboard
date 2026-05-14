@@ -10,6 +10,7 @@ export default function App() {
   const [selectedCreators, setSelectedCreators] = useState(ALL_USERNAMES);
   const [sortBy, setSortBy] = useState('trend_score');
   const [data, setData] = useState({});
+  const [diagnostics, setDiagnostics] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -22,6 +23,7 @@ export default function App() {
       if (!res.ok) throw new Error(`API error ${res.status}`);
       const json = await res.json();
       setData(json.data || {});
+      setDiagnostics(json.diagnostics || {});
       setLastUpdated(json.last_updated || null);
     } catch (e) {
       setError(e.message);
@@ -64,6 +66,7 @@ export default function App() {
             key={creator.username}
             creator={creator}
             products={data[creator.username] || []}
+            diagnostics={diagnostics[creator.username]}
             sortBy={sortBy}
             days={days}
           />
