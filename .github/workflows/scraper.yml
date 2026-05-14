@@ -2,10 +2,9 @@ name: ShopMy Scrape
 
 on:
   schedule:
-    # GitHub schedules run in UTC. These paired UTC hours cover Eastern
-    # Standard and Daylight time; the gate step below runs only at
-    # 8 AM, 2 PM, and 8 PM America/New_York.
-    - cron: '0 0,1,12,13,18,19 * * *'
+    # GitHub schedules run in UTC. Requested daily run times:
+    # 0:00, 12:00, and 18:00 UTC.
+    - cron: '0 0,12,18 * * *'
   workflow_dispatch:
 
 jobs:
@@ -14,28 +13,10 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      - name: Eastern schedule gate
-        id: gate
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "run_scraper=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          eastern_hour="$(TZ=America/New_York date +%H)"
-          if [ "$eastern_hour" = "08" ] || [ "$eastern_hour" = "14" ] || [ "$eastern_hour" = "20" ]; then
-            echo "run_scraper=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run_scraper=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Checkout
-        if: steps.gate.outputs.run_scraper == 'true'
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        if: steps.gate.outputs.run_scraper == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -43,14 +24,12 @@ jobs:
           cache-dependency-path: scraper/package-lock.json
 
       - name: Install scraper dependencies
-        if: steps.gate.outputs.run_scraper == 'true'
         working-directory: scraper
         run: npm ci
 
       - name: Run scraper
-        if: steps.gate.outputs.run_scraper == 'true'
         working-directory: scraper
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scraper.js

@@ -10,7 +10,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const SHOPMY_HEADERS = {
   accept: 'application/json',
   origin: 'https://shopmy.us',
@@ -31,6 +31,7 @@ const CREATORS = [
 
 const DAYS_BACK = 30;
 const API_LIMIT = 100;
+const LATEST_MAX_PRODUCTS = 500;
 
 const args = process.argv.slice(2);
 const DEBUG = args.includes('--debug');
@@ -98,8 +99,27 @@ function momentumScore(age, popularRank) {
   return Math.round((recencyScore + popularityScore) * 100) / 100;
 }
 
-async function fetchProducts(username, tab, limit = API_LIMIT) {
-  const apiUrl = `https://apiv3.shopmy.us/api/Shop/products?Curator_username=${encodeURIComponent(username)}&tab=${tab}&limit=${limit}&searchVariant=similar-products-v1`;
+function productKey(product) {
+  return String(product.Product_id || product.id || '');
+}
+
+function oldestPublishedAt(products) {
+  return products
+    .map(p => (p.publishedAt ? new Date(p.publishedAt) : null))
+    .filter(d => d && !Number.isNaN(d.getTime()))
+    .sort((a, b) => a - b)[0] || null;
+}
+
+async function fetchProducts(username, tab, { limit = API_LIMIT, page = null } = {}) {
+  const params = new URLSearchParams({
+    Curator_username: username,
+    tab,
+    limit: String(limit),
+    searchVariant: 'similar-products-v1',
+  });
+  if (page != null) params.set('page', String(page));
+
+  const apiUrl = `https://apiv3.shopmy.us/api/Shop/products?${params.toString()}`;
   const res = await fetch(apiUrl, { headers: SHOPMY_HEADERS });
   const text = await res.text();
   let body;
@@ -110,13 +130,54 @@ async function fetchProducts(username, tab, limit = API_LIMIT) {
   }
 
   const results = Array.isArray(body.results) ? body.results : [];
-  log(`[${username}] ${tab} success=${res.ok} results=${results.length}`);
+  const pageLabel = page == null ? '' : ` page=${page}`;
+  log(`[${username}] ${tab}${pageLabel} success=${res.ok} results=${results.length}`);
 
   if (!res.ok || !Array.isArray(body.results)) {
     throw new Error(`ShopMy ${tab} API failed (${res.status})`);
   }
 
   return results;
+}
+
+async function fetchLatestProducts(username, scanDate) {
+  const products = [];
+  const seen = new Set();
+  let pagesFetched = 0;
+  let stoppedReason = 'max_cap_reached';
+
+  for (let page = 0; products.length < LATEST_MAX_PRODUCTS; page++) {
+    const pageProducts = await fetchProducts(username, 'latest', { limit: API_LIMIT, page });
+    pagesFetched++;
+
+    const newProducts = [];
+    for (const product of pageProducts) {
+      const key = productKey(product);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      newProducts.push(product);
+    }
+
+    if (newProducts.length === 0) {
+      stoppedReason = 'no_new_products';
+      break;
+    }
+
+    products.push(...newProducts.slice(0, LATEST_MAX_PRODUCTS - products.length));
+
+    const oldestFetched = oldestPublishedAt(products);
+    if (oldestFetched && ageDays(oldestFetched, scanDate) > DAYS_BACK) {
+      stoppedReason = 'older_than_30_days';
+      break;
+    }
+
+    if (pageProducts.length < API_LIMIT) {
+      stoppedReason = 'short_page';
+      break;
+    }
+  }
+
+  return { products, pagesFetched, stoppedReason };
 }
 
 function buildPopularRankMap(popularProducts) {
@@ -159,13 +220,9 @@ function normalizeLatestProduct(product, scanDate, popularRanks, latestWindowInc
 }
 
 function buildRecentFeed(latestProducts, popularProducts, scanDate) {
-  const oldestFetched = latestProducts
-    .map(p => (p.publishedAt ? new Date(p.publishedAt) : null))
-    .filter(d => d && !Number.isNaN(d.getTime()))
-    .sort((a, b) => a - b)[0];
-
+  const oldestFetched = oldestPublishedAt(latestProducts);
   const oldestFetchedAge = oldestFetched ? ageDays(oldestFetched, scanDate) : null;
-  const latestWindowIncomplete = latestProducts.length >= API_LIMIT
+  const latestWindowIncomplete = latestProducts.length >= LATEST_MAX_PRODUCTS
     && oldestFetchedAge != null
     && oldestFetchedAge <= DAYS_BACK;
 
@@ -194,11 +251,12 @@ function buildRecentFeed(latestProducts, popularProducts, scanDate) {
 }
 
 async function scrapeCreator(username, scanDate) {
-  log(`[${username}] Fetching latest API (${API_LIMIT})`);
-  const latestProducts = await fetchProducts(username, 'latest');
+  log(`[${username}] Fetching latest API (${API_LIMIT}/page, max ${LATEST_MAX_PRODUCTS})`);
+  const latestFetch = await fetchLatestProducts(username, scanDate);
+  const latestProducts = latestFetch.products;
 
   log(`[${username}] Fetching popular API (${API_LIMIT})`);
-  const popularProducts = await fetchProducts(username, 'popular');
+  const popularProducts = await fetchProducts(username, 'popular', { limit: API_LIMIT });
 
   if (latestProducts.length === 0 && popularProducts.length === 0) {
     warn(`[${username}] Zero products returned for both latest and popular.`);
@@ -206,7 +264,10 @@ async function scrapeCreator(username, scanDate) {
 
   const feed = buildRecentFeed(latestProducts, popularProducts, scanDate);
   const d = feed.diagnostics;
+  d.latest_pages_fetched = latestFetch.pagesFetched;
+  d.latest_stopped_reason = latestFetch.stoppedReason;
   log(`[${username}] Latest fetched: ${d.latest_fetched}; recent kept: ${d.recent_kept}; popular fetched: ${d.popular_fetched}`);
+  log(`[${username}] Latest pages: ${d.latest_pages_fetched}; stopped: ${d.latest_stopped_reason}`);
   if (d.latest_window_incomplete) {
     warn(`[${username}] latest_window_incomplete=true; oldest latest item fetched is ${d.oldest_latest_age_days} days old`);
   }
