@@ -215,7 +215,12 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
                   className={sortKey === col.key ? 'sorted' : ''}
                   onClick={() => handleHeaderClick(col.key)}
                 >
-                  {col.label}
+                  {col.key === 'momentum_score' ? (
+                    <>
+                      <span className="desktop-label">Momentum</span>
+                      <span className="mobile-label">Score</span>
+                    </>
+                  ) : col.label}
                   {sortKey === col.key && <span className="sort-arrow">{sortDir === 'desc' ? 'v' : '^'}</span>}
                 </th>
               ))}
@@ -236,9 +241,9 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
                         : item.product_name}
                     </div>
                     <div className="product-meta-mobile">
-                      <span>{item.creator_username}</span>
-                      <span>{item.brand || '-'}</span>
-                      <span>{item.price || '-'}</span>
+                      {[item.creator_username, item.brand, item.price].filter(Boolean).map(value => (
+                        <span key={value}>{value}</span>
+                      ))}
                     </div>
                   </div>
                 </td>
