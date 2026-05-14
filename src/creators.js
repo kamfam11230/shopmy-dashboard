@@ -29,5 +29,5 @@ export const CREATORS = [
   { username: 'designerthreads',      name: 'Designer Threads' },
   { username: 'shopwithdass',         name: 'Shop with Dass' },
   { username: 'leahslinks',           name: "Leah's Links" },
-  { username: 'littlelinks',          name: 'Little Links' },
+  { username: 'yglamm15',             name: 'Little Links' },
 ];

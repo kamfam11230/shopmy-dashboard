@@ -148,6 +148,7 @@ body {
   border-radius: 4px;
 }
 .panel-header a:hover { border-color: var(--accent); color: var(--accent); }
+.panel-action { margin-left: 0; }
 .panel-count {
   margin-left: auto;
   font-size: .72rem;
@@ -276,6 +277,13 @@ body {
 .trend-hot { color: var(--green); }
 .trend-warm { color: var(--yellow); }
 .trend-cool { color: var(--text-muted); }
+.table-footer {
+  padding: 7px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: .74rem;
+  background: var(--bg);
+}
 
 .watch-section {
   border-top: 2px dashed var(--border);

@@ -10,6 +10,8 @@ export default function App() {
   const [days, setDays] = useState(7);
   const [selectedCreators, setSelectedCreators] = useState(ALL_USERNAMES);
   const [sortBy, setSortBy] = useState('trend_score');
+  const [viewMode, setViewMode] = useState('best');
+  const [minMomentum, setMinMomentum] = useState(50);
   const [data, setData] = useState({});
   const [diagnostics, setDiagnostics] = useState({});
   const [loading, setLoading] = useState(true);
@@ -57,15 +59,23 @@ export default function App() {
         setSelectedCreators={setSelectedCreators}
         sortBy={sortBy}
         setSortBy={setSortBy}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        minMomentum={minMomentum}
+        setMinMomentum={setMinMomentum}
       />
 
       <div className="main">
         {loading && <div className="loading">Loading…</div>}
         {error && <div className="error-msg">Error: {error}</div>}
-        {!loading && !error && (
-          <BestProducts data={data} visibleCreators={visibleCreators} />
+        {!loading && !error && (viewMode === 'best' || viewMode === 'both') && (
+          <BestProducts
+            data={data}
+            visibleCreators={visibleCreators}
+            minMomentum={minMomentum}
+          />
         )}
-        {!loading && !error && visibleCreators.map(creator => (
+        {!loading && !error && (viewMode === 'creators' || viewMode === 'both') && visibleCreators.map(creator => (
           <CreatorPanel
             key={creator.username}
             creator={creator}

@@ -50,7 +50,7 @@ function isVisibleRanked(item) {
   return item.matched_in_popular && item.popular_rank != null && Number(item.momentum_score) > 0;
 }
 
-function bestProducts(data, visibleCreators) {
+function bestProducts(data, visibleCreators, minMomentum) {
   const visibleUsernames = new Set(visibleCreators.map(c => c.username));
   const bestByProduct = new Map();
 
@@ -58,6 +58,7 @@ function bestProducts(data, visibleCreators) {
     if (!visibleUsernames.has(username)) continue;
     for (const product of products || []) {
       if (!isVisibleRanked(product)) continue;
+      if (Number(product.momentum_score) < Number(minMomentum)) continue;
       const key = productKey(product);
       const existing = bestByProduct.get(key);
       const creatorSet = existing?._creatorSet || new Set();
@@ -79,18 +80,28 @@ function bestProducts(data, visibleCreators) {
     .sort((a, b) => Number(b.momentum_score) - Number(a.momentum_score));
 }
 
-export default function BestProducts({ data, visibleCreators }) {
-  const products = bestProducts(data, visibleCreators);
+export default function BestProducts({ data, visibleCreators, minMomentum }) {
+  const [expanded, setExpanded] = useState(false);
+  const products = bestProducts(data, visibleCreators, minMomentum);
+  const visibleProducts = expanded ? products : products.slice(0, 25);
+  const hiddenCount = Math.max(0, products.length - visibleProducts.length);
 
   return (
     <section className="creator-panel best-products-panel">
       <div className="panel-header">
         <h2>Best Products</h2>
-        <span className="panel-count">{products.length} item{products.length !== 1 ? 's' : ''}</span>
+        <span className="panel-count">
+          {visibleProducts.length} shown / {products.length} item{products.length !== 1 ? 's' : ''}
+        </span>
+        {products.length > 25 && (
+          <button className="btn panel-action" onClick={() => setExpanded(v => !v)}>
+            {expanded ? 'Collapse' : `Show all ${products.length}`}
+          </button>
+        )}
       </div>
 
       {products.length === 0 ? (
-        <div className="no-data">No positive-momentum ranked products in this timeframe.</div>
+        <div className="no-data">No ranked products at momentum {minMomentum}+ in this timeframe.</div>
       ) : (
         <table className="product-table best-products-table">
           <thead>
@@ -107,7 +118,7 @@ export default function BestProducts({ data, visibleCreators }) {
             </tr>
           </thead>
           <tbody>
-            {products.map((item, i) => (
+            {visibleProducts.map((item, i) => (
               <tr key={`${productKey(item)}-${i}`}>
                 <td><RankBadge rank={item.popular_rank} /></td>
                 <td>
@@ -139,6 +150,11 @@ export default function BestProducts({ data, visibleCreators }) {
             ))}
           </tbody>
         </table>
+      )}
+      {!expanded && hiddenCount > 0 && (
+        <div className="table-footer">
+          Showing top 25. {hiddenCount} more product{hiddenCount !== 1 ? 's' : ''} match this filter.
+        </div>
       )}
     </section>
   );

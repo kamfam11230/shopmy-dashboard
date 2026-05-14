@@ -9,7 +9,26 @@ const TIMELINE_OPTIONS = [
   { label: '30d',  days: 30 },
 ];
 
-export default function Controls({ days, setDays, selectedCreators, setSelectedCreators, sortBy, setSortBy }) {
+const VIEW_OPTIONS = [
+  { label: 'Best Products', value: 'best' },
+  { label: 'By Creator', value: 'creators' },
+  { label: 'Both', value: 'both' },
+];
+
+const MOMENTUM_OPTIONS = [1, 50, 60, 80, 100];
+
+export default function Controls({
+  days,
+  setDays,
+  selectedCreators,
+  setSelectedCreators,
+  sortBy,
+  setSortBy,
+  viewMode,
+  setViewMode,
+  minMomentum,
+  setMinMomentum,
+}) {
   const [showCreators, setShowCreators] = useState(false);
 
   function toggle(username) {
@@ -49,6 +68,36 @@ export default function Controls({ days, setDays, selectedCreators, setSelectedC
             <button className={`btn${sortBy === 'posted_at' ? ' active' : ''}`} onClick={() => setSortBy('posted_at')}>
               Newest
             </button>
+          </div>
+        </div>
+
+        <div className="control-group compact-group">
+          <span className="control-label">View</span>
+          <div className="btn-group">
+            {VIEW_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                className={`btn${viewMode === opt.value ? ' active' : ''}`}
+                onClick={() => setViewMode(opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="control-group compact-group">
+          <span className="control-label">Min Momentum</span>
+          <div className="btn-group">
+            {MOMENTUM_OPTIONS.map(value => (
+              <button
+                key={value}
+                className={`btn${Number(minMomentum) === value ? ' active' : ''}`}
+                onClick={() => setMinMomentum(value)}
+              >
+                {value}
+              </button>
+            ))}
           </div>
         </div>
 
