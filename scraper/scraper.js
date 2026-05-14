@@ -318,7 +318,15 @@ async function main() {
   }
 
   const supabase = (!DRY_RUN && SUPABASE_URL && SUPABASE_SERVICE_KEY)
-    ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+      realtime: {
+        enabled: false,
+      },
+    })
     : null;
 
   const creators = CREATOR_FILTER ? [CREATOR_FILTER] : CREATORS;
