@@ -31,8 +31,10 @@ function productScore(item) {
   return item.momentum_score;
 }
 
-function isVisibleRanked(item) {
-  return item.matched_in_popular && item.popular_rank != null && Number(productScore(item)) > 0;
+function isVisibleRanked(item, minMomentum) {
+  return item.matched_in_popular
+    && item.popular_rank != null
+    && Number(productScore(item)) >= Number(minMomentum);
 }
 
 function isRanked(item) {
@@ -107,7 +109,7 @@ function CountSummary({ diagnostics, shownCount }) {
   );
 }
 
-export default function CreatorPanel({ creator, products, diagnostics }) {
+export default function CreatorPanel({ creator, products, diagnostics, minMomentum }) {
   const [localSort, setLocalSort] = useState('trend_score');
   const [sortDir, setSortDir] = useState('desc');
 
@@ -124,7 +126,7 @@ export default function CreatorPanel({ creator, products, diagnostics }) {
   }
 
   const visibleProducts = products
-    .filter(isVisibleRanked)
+    .filter(item => isVisibleRanked(item, minMomentum))
     .map(p => ({
     ...p,
     _score: productScore(p),
@@ -159,10 +161,10 @@ export default function CreatorPanel({ creator, products, diagnostics }) {
 
   if (visibleProducts.length === 0) {
     const message = rankedTotal > 0 && hiddenMomentumTotal > 0
-      ? `${rankedTotal} ranked recent post${rankedTotal !== 1 ? 's' : ''} found, but none meet the current momentum filter.`
+      ? `${recentTotal} recent product${recentTotal !== 1 ? 's' : ''} found; ${rankedTotal} ranked in Popular, but none meet score ${minMomentum}+.`
       : recentTotal > 0
-      ? `${recentTotal} recent Latest post${recentTotal !== 1 ? 's' : ''} found, but none ranked in Popular yet.`
-      : 'No recent Latest posts found in this timeframe.';
+      ? `${recentTotal} recent Latest product${recentTotal !== 1 ? 's' : ''} found, but none ranked in Popular yet.`
+      : 'No recent Latest products found in this timeframe.';
 
     return (
       <div className="creator-panel">

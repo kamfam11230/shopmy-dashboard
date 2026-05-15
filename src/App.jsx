@@ -18,8 +18,8 @@ function isRanked(item) {
   return item.matched_in_popular && item.popular_rank != null;
 }
 
-function hasVisibleMomentum(item) {
-  return isRanked(item) && Number(item.momentum_score) > 0;
+function hasScoreAtLeast(item, minScore) {
+  return isRanked(item) && Number(item.momentum_score) >= Number(minScore);
 }
 
 function filterDataByTimeframe(data, days) {
@@ -31,13 +31,13 @@ function filterDataByTimeframe(data, days) {
   );
 }
 
-function buildTimeframeDiagnostics(data) {
+function buildTimeframeDiagnostics(data, minScore) {
   return Object.fromEntries(
     CREATORS.map(({ username }) => {
       const products = data[username] || [];
       const recentTotal = products.length;
       const rankedTotal = products.filter(isRanked).length;
-      const visibleRankedTotal = products.filter(hasVisibleMomentum).length;
+      const visibleRankedTotal = products.filter(item => hasScoreAtLeast(item, minScore)).length;
 
       return [
         username,
@@ -90,7 +90,7 @@ export default function App() {
   const visibleCreators = CREATORS.filter(c => selectedCreators.has(c.username));
   const timeframeData = filterDataByTimeframe(data, days);
   const timeframeAllData = filterDataByTimeframe(allData, days);
-  const timeframeDiagnostics = buildTimeframeDiagnostics(timeframeAllData);
+  const timeframeDiagnostics = buildTimeframeDiagnostics(timeframeAllData, minMomentum);
 
   return (
     <>
@@ -131,6 +131,7 @@ export default function App() {
             products={timeframeData[creator.username] || []}
             diagnostics={timeframeDiagnostics[creator.username]}
             days={days}
+            minMomentum={minMomentum}
           />
         ))}
       </div>

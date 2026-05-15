@@ -44,7 +44,7 @@ body {
   padding: 6px 18px;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 30;
 }
 .controls-row {
   display: flex;
@@ -179,7 +179,7 @@ body {
 .best-products-panel > .panel-header {
   position: sticky;
   top: 43px;
-  z-index: 9;
+  z-index: 20;
   display: grid;
   grid-template-columns: auto minmax(120px, 1fr) auto auto;
   align-items: center;
@@ -368,8 +368,8 @@ body {
   .controls { padding: 6px 10px; }
   .controls-row { gap: 8px; flex-wrap: wrap; }
   .best-products-panel > .panel-header {
-    top: 0;
-    z-index: 11;
+    top: 41px;
+    z-index: 20;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 6px;
   }
