@@ -16,8 +16,6 @@ export default function Controls({
   setDays,
   selectedCreators,
   setSelectedCreators,
-  sortBy,
-  setSortBy,
   minMomentum,
   setMinMomentum,
 }) {
@@ -48,18 +46,6 @@ export default function Controls({
                 {opt.label}
               </button>
             ))}
-          </div>
-        </div>
-
-        <div className="control-group compact-group">
-          <span className="control-label">Sort</span>
-          <div className="btn-group">
-            <button className={`btn${sortBy === 'trend_score' ? ' active' : ''}`} onClick={() => setSortBy('trend_score')}>
-              Momentum
-            </button>
-            <button className={`btn${sortBy === 'posted_at' ? ' active' : ''}`} onClick={() => setSortBy('posted_at')}>
-              Newest
-            </button>
           </div>
         </div>
 

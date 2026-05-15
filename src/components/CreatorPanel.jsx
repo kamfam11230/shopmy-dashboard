@@ -56,30 +56,30 @@ function ProductThumb({ item }) {
   );
 }
 
-function ProductIdentity({ item }) {
+function ProductCopy({ item, creatorLabel }) {
   return (
-    <div className="product-identity">
-      <ProductThumb item={item} />
-      <div className="product-copy">
-        <div className="product-name">
-          {item.product_url
-            ? <a href={item.product_url} target="_blank" rel="noopener noreferrer">{item.product_name}</a>
-            : item.product_name}
-        </div>
-        <div className="product-meta-mobile">
-          <span>{item.brand || '-'}</span>
-          <span>{item.price || '-'}</span>
-        </div>
+    <div className="product-copy">
+      {item.brand && <div className="product-brand-line">{item.brand}</div>}
+      <div className="product-name">
+        {item.product_url
+          ? <a href={item.product_url} target="_blank" rel="noopener noreferrer">{item.product_name}</a>
+          : item.product_name}
+      </div>
+      <div className="product-meta-mobile">
+        {creatorLabel && <span>{creatorLabel}</span>}
+        {item.price && <span>{item.price}</span>}
       </div>
     </div>
   );
 }
 
-function ProductRow({ item }) {
+function ProductRow({ item, creatorLabel }) {
   return (
     <tr>
       <td><RankBadge rank={item.popular_rank} /></td>
-      <td><ProductIdentity item={item} /></td>
+      <td><ProductThumb item={item} /></td>
+      <td><ProductCopy item={item} creatorLabel={creatorLabel} /></td>
+      <td className="creator-cell">{creatorLabel}</td>
       <td className="brand">{item.brand || '-'}</td>
       <td className="price">{item.price || '-'}</td>
       <td><span className="category-tag">{item.category || '-'}</span></td>
@@ -91,12 +91,14 @@ function ProductRow({ item }) {
 
 const TABLE_COLS = [
   { key: 'popular_rank', label: 'Rank' },
+  { key: 'image',        label: '' },
   { key: 'product_name', label: 'Product' },
+  { key: 'creator_name', label: 'Creator' },
   { key: 'brand',        label: 'Brand' },
   { key: 'price',        label: 'Price' },
   { key: 'category',     label: 'Category' },
   { key: 'posted_at',    label: 'Posted' },
-  { key: 'trend_score',  label: 'Momentum' },
+  { key: 'trend_score',  label: 'Score' },
 ];
 
 function CountSummary({ diagnostics, rankedCount }) {
@@ -115,11 +117,12 @@ function CountSummary({ diagnostics, rankedCount }) {
   );
 }
 
-export default function CreatorPanel({ creator, products, diagnostics, sortBy }) {
-  const [localSort, setLocalSort] = useState(null);
+export default function CreatorPanel({ creator, products, diagnostics }) {
+  const [localSort, setLocalSort] = useState('trend_score');
   const [sortDir, setSortDir] = useState('desc');
 
-  const activeSort = localSort || sortBy;
+  const activeSort = localSort;
+  const creatorLabel = creator.name || creator.username;
 
   function handleHeaderClick(key) {
     if (localSort === key) {
@@ -152,6 +155,10 @@ export default function CreatorPanel({ creator, products, diagnostics, sortBy })
         va = a.popular_rank ?? Infinity;
         vb = b.popular_rank ?? Infinity;
         return sortDir === 'asc' ? va - vb : vb - va;
+      } else if (activeSort === 'creator_name') {
+        va = creatorLabel;
+        vb = creatorLabel;
+        return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
       } else {
         va = String(a[activeSort] || '');
         vb = String(b[activeSort] || '');
@@ -163,7 +170,7 @@ export default function CreatorPanel({ creator, products, diagnostics, sortBy })
 
   if (ranked.length === 0) {
     const message = rankedTotal > 0 && hiddenMomentumTotal > 0
-      ? `${rankedTotal} ranked recent post${rankedTotal !== 1 ? 's' : ''} found, but none have positive momentum.`
+      ? `${rankedTotal} ranked recent post${rankedTotal !== 1 ? 's' : ''} found, but none meet the current momentum filter.`
       : recentTotal > 0
       ? `${recentTotal} recent Latest post${recentTotal !== 1 ? 's' : ''} found, but none ranked in Popular yet.`
       : 'No recent Latest posts found in this timeframe.';
@@ -201,26 +208,30 @@ export default function CreatorPanel({ creator, products, diagnostics, sortBy })
         <CountSummary diagnostics={diagnostics} rankedCount={ranked.length} />
       </div>
 
-      <table className="product-table">
+      <table className="product-table creator-products-table">
         <thead>
           <tr>
             {TABLE_COLS.map(col => (
-              <th
-                key={col.key}
-                className={activeSort === col.key ? 'sorted' : ''}
-                onClick={() => handleHeaderClick(col.key)}
-              >
-                {col.label}
-                {activeSort === col.key && (
-                  <span className="sort-arrow">{sortDir === 'desc' ? 'v' : '^'}</span>
-                )}
-              </th>
+              col.key === 'image' ? (
+                <th key={col.key} aria-label="Image"></th>
+              ) : (
+                <th
+                  key={col.key}
+                  className={activeSort === col.key ? 'sorted' : ''}
+                  onClick={() => handleHeaderClick(col.key)}
+                >
+                  {col.label}
+                  {activeSort === col.key && (
+                    <span className="sort-arrow">{sortDir === 'desc' ? 'v' : '^'}</span>
+                  )}
+                </th>
+              )
             ))}
           </tr>
         </thead>
         <tbody>
           {sortedRanked.map((item, i) => (
-            <ProductRow key={`${item.product_url || item.product_name}-${i}`} item={item} />
+            <ProductRow key={`${item.product_url || item.product_name}-${i}`} item={item} creatorLabel={creatorLabel} />
           ))}
         </tbody>
       </table>

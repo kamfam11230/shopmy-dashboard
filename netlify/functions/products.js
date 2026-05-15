@@ -68,6 +68,7 @@ exports.handler = async (event) => {
 
   const diagnostics = {};
   const grouped = {};
+  const allGrouped = {};
   let latestScanDate = null;
   for (const row of deduped) {
     if (!diagnostics[row.creator_username]) {
@@ -79,6 +80,9 @@ exports.handler = async (event) => {
         visible_ranked_total: 0,
       };
     }
+
+    if (!allGrouped[row.creator_username]) allGrouped[row.creator_username] = [];
+    allGrouped[row.creator_username].push(row);
 
     diagnostics[row.creator_username].recent_total++;
     if (!row.matched_in_popular || row.popular_rank == null) {
@@ -101,6 +105,6 @@ exports.handler = async (event) => {
   return {
     statusCode: 200,
     headers,
-    body: JSON.stringify({ data: grouped, diagnostics, last_updated: latestScanDate }),
+    body: JSON.stringify({ data: grouped, all_data: allGrouped, diagnostics, last_updated: latestScanDate }),
   };
 };

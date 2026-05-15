@@ -56,9 +56,9 @@ function buildTimeframeDiagnostics(data) {
 export default function App() {
   const [days, setDays] = useState(4);
   const [selectedCreators, setSelectedCreators] = useState(ALL_USERNAMES);
-  const [sortBy, setSortBy] = useState('trend_score');
   const [minMomentum, setMinMomentum] = useState(50);
   const [data, setData] = useState({});
+  const [allData, setAllData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -76,6 +76,7 @@ export default function App() {
 
     const json = await res.json();
     setData(json.data || {});
+    setAllData(json.all_data || json.data || {});
     setLastUpdated(json.last_updated || null);
   } catch (e) {
     setError(e.message);
@@ -88,7 +89,8 @@ export default function App() {
 
   const visibleCreators = CREATORS.filter(c => selectedCreators.has(c.username));
   const timeframeData = filterDataByTimeframe(data, days);
-  const timeframeDiagnostics = buildTimeframeDiagnostics(timeframeData);
+  const timeframeAllData = filterDataByTimeframe(allData, days);
+  const timeframeDiagnostics = buildTimeframeDiagnostics(timeframeAllData);
 
   return (
     <>
@@ -108,8 +110,6 @@ export default function App() {
         setDays={setDays}
         selectedCreators={selectedCreators}
         setSelectedCreators={setSelectedCreators}
-        sortBy={sortBy}
-        setSortBy={setSortBy}
         minMomentum={minMomentum}
         setMinMomentum={setMinMomentum}
       />
@@ -130,7 +130,6 @@ export default function App() {
             creator={creator}
             products={timeframeData[creator.username] || []}
             diagnostics={timeframeDiagnostics[creator.username]}
-            sortBy={sortBy}
             days={days}
           />
         ))}

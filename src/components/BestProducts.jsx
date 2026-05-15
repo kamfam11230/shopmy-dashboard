@@ -197,7 +197,7 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
                 {sortKey === 'popular_rank' && <span className="sort-arrow">{sortDir === 'desc' ? 'v' : '^'}</span>}
               </th>
               <th aria-label="Image"></th>
-              <th aria-label="Product"></th>
+              <th>Product</th>
               {SORTABLE_COLS.filter(col => !['popular_rank', 'posted_at', 'momentum_score'].includes(col.key)).map(col => (
                 <th
                   key={col.key}
@@ -230,7 +230,7 @@ export default function BestProducts({ data, visibleCreators, minMomentum }) {
                 </td>
                 <td>
                   <div className="product-copy">
-                    {item.brand && <div className="product-brand-mobile">{item.brand}</div>}
+                    {item.brand && <div className="product-brand-line">{item.brand}</div>}
                     <div className="product-name">
                       {item.product_url
                         ? <a href={item.product_url} target="_blank" rel="noopener noreferrer">{item.product_name}</a>
