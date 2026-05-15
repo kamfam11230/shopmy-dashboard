@@ -5,12 +5,6 @@ function daysSince(isoString) {
   return (Date.now() - new Date(isoString).getTime()) / 86_400_000;
 }
 
-function fallbackTrendScore(rank, posted_at) {
-  if (!rank) return null;
-  const d = daysSince(posted_at);
-  return (1000 / rank) * (1 / (d + 1));
-}
-
 function formatPosted(isoString) {
   if (!isoString) return '-';
   const d = daysSince(isoString);
@@ -34,11 +28,15 @@ function TrendCell({ score }) {
 }
 
 function productScore(item) {
-  return item.momentum_score ?? fallbackTrendScore(item.popular_rank, item.posted_at);
+  return item.momentum_score;
 }
 
 function isVisibleRanked(item) {
   return item.matched_in_popular && item.popular_rank != null && Number(productScore(item)) > 0;
+}
+
+function isRanked(item) {
+  return item.matched_in_popular && item.popular_rank != null;
 }
 
 function ProductThumb({ item }) {
@@ -79,10 +77,6 @@ function ProductRow({ item, creatorLabel }) {
       <td><RankBadge rank={item.popular_rank} /></td>
       <td><ProductThumb item={item} /></td>
       <td><ProductCopy item={item} creatorLabel={creatorLabel} /></td>
-      <td className="creator-cell">{creatorLabel}</td>
-      <td className="brand">{item.brand || '-'}</td>
-      <td className="price">{item.price || '-'}</td>
-      <td><span className="category-tag">{item.category || '-'}</span></td>
       <td className="posted-time">{formatPosted(item.posted_at)}</td>
       <td><TrendCell score={productScore(item)} /></td>
     </tr>
@@ -93,24 +87,20 @@ const TABLE_COLS = [
   { key: 'popular_rank', label: 'Rank' },
   { key: 'image',        label: '' },
   { key: 'product_name', label: 'Product' },
-  { key: 'creator_name', label: 'Creator' },
-  { key: 'brand',        label: 'Brand' },
-  { key: 'price',        label: 'Price' },
-  { key: 'category',     label: 'Category' },
   { key: 'posted_at',    label: 'Posted' },
   { key: 'trend_score',  label: 'Score' },
 ];
 
-function CountSummary({ diagnostics, rankedCount }) {
-  const recentTotal = diagnostics?.recent_total ?? rankedCount;
-  const rankedTotal = diagnostics?.ranked_total ?? rankedCount;
+function CountSummary({ diagnostics, shownCount }) {
+  const recentTotal = diagnostics?.recent_total ?? shownCount;
+  const rankedTotal = diagnostics?.ranked_total ?? 0;
   const unrankedTotal = diagnostics?.unranked_total ?? Math.max(0, recentTotal - rankedTotal);
   const hiddenMomentumTotal = diagnostics?.hidden_momentum_total ?? 0;
-  const visibleRankedTotal = diagnostics?.visible_ranked_total ?? rankedCount;
+  const visibleRankedTotal = diagnostics?.visible_ranked_total ?? 0;
 
   return (
     <span className="panel-count">
-      {visibleRankedTotal} shown / {rankedTotal} ranked / {recentTotal} recent
+      {shownCount} shown / {visibleRankedTotal} strong / {rankedTotal} ranked / {recentTotal} recent
       {unrankedTotal > 0 && <span className="unranked-count"> {unrankedTotal} unranked</span>}
       {hiddenMomentumTotal > 0 && <span className="hidden-count"> {hiddenMomentumTotal} low momentum</span>}
     </span>
@@ -133,12 +123,15 @@ export default function CreatorPanel({ creator, products, diagnostics }) {
     }
   }
 
-  const ranked = products
+  const visibleProducts = products
     .filter(isVisibleRanked)
-    .map(p => ({ ...p, _score: productScore(p) }));
+    .map(p => ({
+    ...p,
+    _score: productScore(p),
+  }));
 
-  const recentTotal = diagnostics?.recent_total ?? ranked.length;
-  const rankedTotal = diagnostics?.ranked_total ?? ranked.length;
+  const recentTotal = diagnostics?.recent_total ?? visibleProducts.length;
+  const rankedTotal = diagnostics?.ranked_total ?? visibleProducts.length;
   const unrankedTotal = diagnostics?.unranked_total ?? Math.max(0, recentTotal - rankedTotal);
   const hiddenMomentumTotal = diagnostics?.hidden_momentum_total ?? 0;
 
@@ -155,10 +148,6 @@ export default function CreatorPanel({ creator, products, diagnostics }) {
         va = a.popular_rank ?? Infinity;
         vb = b.popular_rank ?? Infinity;
         return sortDir === 'asc' ? va - vb : vb - va;
-      } else if (activeSort === 'creator_name') {
-        va = creatorLabel;
-        vb = creatorLabel;
-        return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
       } else {
         va = String(a[activeSort] || '');
         vb = String(b[activeSort] || '');
@@ -168,7 +157,7 @@ export default function CreatorPanel({ creator, products, diagnostics }) {
     });
   }
 
-  if (ranked.length === 0) {
+  if (visibleProducts.length === 0) {
     const message = rankedTotal > 0 && hiddenMomentumTotal > 0
       ? `${rankedTotal} ranked recent post${rankedTotal !== 1 ? 's' : ''} found, but none meet the current momentum filter.`
       : recentTotal > 0
@@ -182,7 +171,7 @@ export default function CreatorPanel({ creator, products, diagnostics }) {
           <a href={`https://shopmy.us/shop/${creator.username}`} target="_blank" rel="noopener noreferrer">
             ShopMy -&gt;
           </a>
-          <CountSummary diagnostics={diagnostics} rankedCount={ranked.length} />
+          <CountSummary diagnostics={diagnostics} shownCount={visibleProducts.length} />
         </div>
         <div className={`no-data${recentTotal > 0 ? ' pending-rank' : ''}`}>
           {message}
@@ -196,7 +185,7 @@ export default function CreatorPanel({ creator, products, diagnostics }) {
     );
   }
 
-  const sortedRanked = sortItems(ranked);
+  const sortedProducts = sortItems(visibleProducts);
 
   return (
     <div className="creator-panel">
@@ -205,7 +194,7 @@ export default function CreatorPanel({ creator, products, diagnostics }) {
         <a href={`https://shopmy.us/shop/${creator.username}`} target="_blank" rel="noopener noreferrer">
           ShopMy -&gt;
         </a>
-        <CountSummary diagnostics={diagnostics} rankedCount={ranked.length} />
+        <CountSummary diagnostics={diagnostics} shownCount={visibleProducts.length} />
       </div>
 
       <table className="product-table creator-products-table">
@@ -230,7 +219,7 @@ export default function CreatorPanel({ creator, products, diagnostics }) {
           </tr>
         </thead>
         <tbody>
-          {sortedRanked.map((item, i) => (
+          {sortedProducts.map((item, i) => (
             <ProductRow key={`${item.product_url || item.product_name}-${i}`} item={item} creatorLabel={creatorLabel} />
           ))}
         </tbody>

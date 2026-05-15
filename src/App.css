@@ -453,28 +453,18 @@ body {
     text-align: center;
   }
   .creator-products-table th:nth-child(4),
-  .creator-products-table th:nth-child(5),
-  .creator-products-table th:nth-child(6),
-  .creator-products-table th:nth-child(7),
-  .creator-products-table td:nth-child(4),
-  .creator-products-table td:nth-child(5),
-  .creator-products-table td:nth-child(6),
-  .creator-products-table td:nth-child(7) {
-    display: none;
-  }
-  .creator-products-table th:nth-child(8),
-  .creator-products-table td:nth-child(8) {
+  .creator-products-table td:nth-child(4) {
     display: table-cell;
     width: 58px;
     text-align: center;
   }
-  .creator-products-table th:nth-child(9),
-  .creator-products-table td:nth-child(9) {
+  .creator-products-table th:nth-child(5),
+  .creator-products-table td:nth-child(5) {
     display: table-cell;
     width: 44px;
     text-align: right;
   }
-  .creator-products-table th:nth-child(9) .sort-arrow {
+  .creator-products-table th:nth-child(5) .sort-arrow {
     display: none;
   }
   .best-products-table th:nth-child(3),

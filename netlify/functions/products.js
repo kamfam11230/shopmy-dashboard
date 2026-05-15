@@ -27,6 +27,28 @@ function isVisibleRanked(row) {
   return row.matched_in_popular && row.popular_rank != null && Number(row.momentum_score) > 0;
 }
 
+async function fetchRowsSince(cutoff) {
+  const pageSize = 1000;
+  const allRows = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const to = from + pageSize - 1;
+    const { data, error } = await supabase
+      .from('scans')
+      .select('creator_username, product_name, brand, category, price, product_url, image_url, posted_at, popular_rank, matched_in_popular, momentum_score, scan_date')
+      .gte('posted_at', cutoff)
+      .order('scan_date', { ascending: false })
+      .range(from, to);
+
+    if (error) return { rows: null, error };
+
+    allRows.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+
+  return { rows: allRows, error: null };
+}
+
 exports.handler = async (event) => {
   const headers = {
     'Content-Type': 'application/json',
@@ -43,11 +65,7 @@ exports.handler = async (event) => {
 
   // Fetch all rows where posted_at is within the window.
   // Order by scan_date DESC so dedup keeps the freshest rank per product.
-  const { data: rows, error } = await supabase
-    .from('scans')
-    .select('creator_username, product_name, brand, category, price, product_url, image_url, posted_at, popular_rank, matched_in_popular, momentum_score, scan_date')
-    .gte('posted_at', cutoff)
-    .order('scan_date', { ascending: false });
+  const { rows, error } = await fetchRowsSince(cutoff);
 
   if (error) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
