@@ -38,6 +38,8 @@ async function fetchRowsSince(cutoff) {
       .select('creator_username, product_name, brand, category, price, product_url, image_url, posted_at, popular_rank, matched_in_popular, momentum_score, scan_date')
       .gte('posted_at', cutoff)
       .order('scan_date', { ascending: false })
+      .order('creator_username', { ascending: true })
+      .order('product_url', { ascending: true })
       .range(from, to);
 
     if (error) return { rows: null, error };
