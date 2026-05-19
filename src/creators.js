@@ -30,4 +30,7 @@ export const CREATORS = [
   { username: 'shopwithdass',         name: 'Shop with Dass' },
   { username: 'leahslinks',           name: "Leah's Links" },
   { username: 'yglamm15',             name: 'Little Links' },
+  { username: 'chansendz',            name: 'Chan Sendz' },
+  { username: 'fitsbyyaf',            name: 'Fits by Yaf' },
+  { username: 'shanatoiv',            name: 'Shana Toiv' },
 ];
