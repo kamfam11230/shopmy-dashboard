@@ -30,8 +30,9 @@ const CREATORS = [
 
 const DAYS_BACK = 30;
 const API_LIMIT = 100;
-const LATEST_MAX_PRODUCTS = 500;
-const POPULAR_MAX_PRODUCTS = 500;
+const PAGE_SIZE = API_LIMIT;
+const LATEST_MAX_PRODUCTS = 1500;
+const POPULAR_MAX_PRODUCTS = 1500;
 
 const args = process.argv.slice(2);
 const DEBUG = args.includes('--debug');
@@ -110,7 +111,7 @@ function oldestPublishedAt(products) {
     .sort((a, b) => a - b)[0] || null;
 }
 
-async function fetchProducts(username, tab, { limit = API_LIMIT, page = null } = {}) {
+async function fetchProducts(username, tab, { limit = PAGE_SIZE, page = null } = {}) {
   const params = new URLSearchParams({
     Curator_username: username,
     tab,
@@ -147,7 +148,7 @@ async function fetchLatestProducts(username, scanDate) {
   let stoppedReason = 'max_cap_reached';
 
   for (let page = 0; products.length < LATEST_MAX_PRODUCTS; page++) {
-    const pageProducts = await fetchProducts(username, 'latest', { limit: API_LIMIT, page });
+    const pageProducts = await fetchProducts(username, 'latest', { limit: PAGE_SIZE, page });
     pagesFetched++;
 
     const newProducts = [];
@@ -171,7 +172,7 @@ async function fetchLatestProducts(username, scanDate) {
       break;
     }
 
-    if (pageProducts.length < API_LIMIT) {
+    if (pageProducts.length < PAGE_SIZE) {
       stoppedReason = 'short_page';
       break;
     }
@@ -187,7 +188,7 @@ async function fetchPagedProducts(username, tab, maxProducts) {
   let stoppedReason = 'max_cap_reached';
 
   for (let page = 0; products.length < maxProducts; page++) {
-    const pageProducts = await fetchProducts(username, tab, { limit: API_LIMIT, page });
+    const pageProducts = await fetchProducts(username, tab, { limit: PAGE_SIZE, page });
     pagesFetched++;
 
     const newProducts = [];
@@ -205,7 +206,7 @@ async function fetchPagedProducts(username, tab, maxProducts) {
 
     products.push(...newProducts.slice(0, maxProducts - products.length));
 
-    if (pageProducts.length < API_LIMIT) {
+    if (pageProducts.length < PAGE_SIZE) {
       stoppedReason = 'short_page';
       break;
     }
@@ -285,11 +286,11 @@ function buildRecentFeed(latestProducts, popularProducts, scanDate) {
 }
 
 async function scrapeCreator(username, scanDate) {
-  log(`[${username}] Fetching latest API (${API_LIMIT}/page, max ${LATEST_MAX_PRODUCTS})`);
+  log(`[${username}] Fetching latest API (${PAGE_SIZE}/page, max ${LATEST_MAX_PRODUCTS})`);
   const latestFetch = await fetchLatestProducts(username, scanDate);
   const latestProducts = latestFetch.products;
 
-  log(`[${username}] Fetching popular API (${API_LIMIT}/page, max ${POPULAR_MAX_PRODUCTS})`);
+  log(`[${username}] Fetching popular API (${PAGE_SIZE}/page, max ${POPULAR_MAX_PRODUCTS})`);
   const popularFetch = await fetchPagedProducts(username, 'popular', POPULAR_MAX_PRODUCTS);
   const popularProducts = popularFetch.products;
 
