@@ -24,7 +24,7 @@ const CREATORS = [
   'sarahsoliani', 'shanilechan', 'devora', 'gowncloset',
   'rivkirabinowitz', 'ladiesshoppinglinks', 'bigcityshopper',
   'styledbynomi', 'rachelw', 'shiraadar', 'looksbybecs',
-  'designerthreads', 'shopwithdass', 'leahslinks', 'yglamm15',
+  'designerthreads', 'leahslinks', 'yglamm15',
   'chansendz', 'fitsbyyaf', 'shanatoiv',
 ];
 

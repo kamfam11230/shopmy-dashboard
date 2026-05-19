@@ -27,7 +27,6 @@ export const CREATORS = [
   { username: 'shiraadar',            name: 'Shira Amir' },
   { username: 'looksbybecs',          name: 'Looks by Becs' },
   { username: 'designerthreads',      name: 'Designer Threads' },
-  { username: 'shopwithdass',         name: 'Shop with Dass' },
   { username: 'leahslinks',           name: "Leah's Links" },
   { username: 'yglamm15',             name: 'Little Links' },
   { username: 'chansendz',            name: 'Chan Sendz' },
