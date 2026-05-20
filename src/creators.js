@@ -32,4 +32,5 @@ export const CREATORS = [
   { username: 'chansendz',            name: 'Chan Sendz' },
   { username: 'fitsbyyaf',            name: 'Fits by Yaf' },
   { username: 'shanatoiv',            name: 'Shana Toiv' },
+  { username: 'thebestkeptsecret',    name: 'The Best Kept Secret' },
 ];
