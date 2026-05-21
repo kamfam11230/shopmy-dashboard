@@ -33,6 +33,7 @@ const API_LIMIT = 100;
 const PAGE_SIZE = API_LIMIT;
 const LATEST_MAX_PRODUCTS = 1500;
 const POPULAR_MAX_PRODUCTS = 1500;
+const POPULAR_SIGNAL_LIMIT = 1000;
 
 const args = process.argv.slice(2);
 const DEBUG = args.includes('--debug');
@@ -92,12 +93,46 @@ function timeframeBucket(age) {
   return '30d';
 }
 
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function interpolate(value, start, end, startScore, endScore) {
+  if (value <= start) return startScore;
+  if (value >= end) return endScore;
+  const progress = (value - start) / (end - start);
+  return startScore + progress * (endScore - startScore);
+}
+
+function popularRankScore(rank) {
+  if (rank <= 10) return interpolate(rank, 1, 10, 55, 50);
+  if (rank <= 50) return interpolate(rank, 10, 50, 50, 35);
+  if (rank <= 100) return interpolate(rank, 50, 100, 35, 25);
+  if (rank <= 250) return interpolate(rank, 100, 250, 25, 15);
+  if (rank <= 500) return interpolate(rank, 250, 500, 15, 5);
+  if (rank <= POPULAR_SIGNAL_LIMIT) return interpolate(rank, 500, POPULAR_SIGNAL_LIMIT, 5, 0);
+  return 0;
+}
+
+function freshPopularBoost(age, rank) {
+  if (age <= 1 && rank <= 25) return 10;
+  if (age <= 3 && rank <= 50) return 8;
+  if (age <= 7 && rank <= 100) return 5;
+  if (age <= 14 && rank <= 50) return 3;
+  return 0;
+}
+
 function momentumScore(age, popularRank) {
-  const recencyScore = Math.max(0, (DAYS_BACK - age) / DAYS_BACK) * 50;
-  const popularityScore = popularRank
-    ? ((API_LIMIT - popularRank + 1) / API_LIMIT) * 50
-    : 0;
-  return Math.round((recencyScore + popularityScore) * 100) / 100;
+  const rank = Number(popularRank);
+  if (!Number.isFinite(rank) || rank <= 0) return 0;
+
+  const freshness = clamp((DAYS_BACK - age) / DAYS_BACK, 0, 1);
+  const recencyScore = freshness * 35;
+  const staleDiscount = 0.35 + freshness * 0.65;
+  const popularityScore = popularRankScore(rank) * staleDiscount;
+  const total = recencyScore + popularityScore + freshPopularBoost(age, rank);
+
+  return Math.round(clamp(total, 0, 100) * 100) / 100;
 }
 
 function productKey(product) {
