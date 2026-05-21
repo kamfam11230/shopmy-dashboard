@@ -27,6 +27,16 @@ function isVisibleRanked(row) {
   return row.matched_in_popular && row.popular_rank != null && Number(row.momentum_score) > 0;
 }
 
+function diagnosticsRow(row) {
+  return {
+    creator_username: row.creator_username,
+    posted_at: row.posted_at,
+    popular_rank: row.popular_rank,
+    matched_in_popular: row.matched_in_popular,
+    momentum_score: row.momentum_score,
+  };
+}
+
 async function fetchRowsSince(cutoff) {
   const pageSize = 1000;
   const allRows = [];
@@ -100,7 +110,7 @@ export async function handler(event) {
     }
 
     if (!allGrouped[row.creator_username]) allGrouped[row.creator_username] = [];
-    allGrouped[row.creator_username].push(row);
+    allGrouped[row.creator_username].push(diagnosticsRow(row));
 
     diagnostics[row.creator_username].recent_total++;
     if (!row.matched_in_popular || row.popular_rank == null) {
