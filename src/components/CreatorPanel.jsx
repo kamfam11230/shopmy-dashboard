@@ -31,6 +31,12 @@ function productScore(item) {
   return item.momentum_score;
 }
 
+function priceValue(price) {
+  if (price == null) return null;
+  const value = Number(String(price).replace(/[^0-9.]+/g, ''));
+  return Number.isFinite(value) ? value : null;
+}
+
 function isVisibleRanked(item, minMomentum) {
   return item.matched_in_popular
     && item.popular_rank != null
@@ -79,6 +85,10 @@ function ProductRow({ item, creatorLabel }) {
       <td><RankBadge rank={item.popular_rank} /></td>
       <td><ProductThumb item={item} /></td>
       <td><ProductCopy item={item} creatorLabel={creatorLabel} /></td>
+      <td className="creator-cell">{creatorLabel}</td>
+      <td className="brand">{item.brand || '-'}</td>
+      <td className="price">{item.price || '-'}</td>
+      <td><span className="category-tag">{item.category || '-'}</span></td>
       <td className="posted-time">{formatPosted(item.posted_at)}</td>
       <td><TrendCell score={productScore(item)} /></td>
     </tr>
@@ -89,6 +99,10 @@ const TABLE_COLS = [
   { key: 'popular_rank', label: 'Rank' },
   { key: 'image',        label: '' },
   { key: 'product_name', label: 'Product' },
+  { key: 'creator_name',  label: 'Creator' },
+  { key: 'brand',        label: 'Brand' },
+  { key: 'price',        label: 'Price' },
+  { key: 'category',     label: 'Category' },
   { key: 'posted_at',    label: 'Posted' },
   { key: 'trend_score',  label: 'Score' },
 ];
@@ -146,10 +160,18 @@ export default function CreatorPanel({ creator, products, diagnostics, minMoment
       } else if (activeSort === 'posted_at') {
         va = new Date(a.posted_at || 0).getTime();
         vb = new Date(b.posted_at || 0).getTime();
+      } else if (activeSort === 'price') {
+        va = priceValue(a.price);
+        vb = priceValue(b.price);
+        va = Number.isFinite(va) ? va : sortDir === 'asc' ? Infinity : -Infinity;
+        vb = Number.isFinite(vb) ? vb : sortDir === 'asc' ? Infinity : -Infinity;
       } else if (activeSort === 'popular_rank') {
         va = a.popular_rank ?? Infinity;
         vb = b.popular_rank ?? Infinity;
         return sortDir === 'asc' ? va - vb : vb - va;
+      } else if (activeSort === 'creator_name') {
+        va = creatorLabel;
+        vb = creatorLabel;
       } else {
         va = String(a[activeSort] || '');
         vb = String(b[activeSort] || '');
