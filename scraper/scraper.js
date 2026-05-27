@@ -25,7 +25,7 @@ const CREATORS = [
   'rivkirabinowitz', 'ladiesshoppinglinks', 'bigcityshopper',
   'styledbynomi', 'rachelw', 'shiraadar', 'looksbybecs',
   'designerthreads', 'leahslinks', 'yglamm15',
-  'fitsbyyaf', 'shanatoiv', 'thebestkeptsecret',
+  'fitsbyyaf', 'shanatoiv', 'thebestkeptsecret', 'thisthat',
 ];
 
 const DAYS_BACK = 30;
