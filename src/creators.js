@@ -13,7 +13,6 @@ export const CREATORS = [
   { username: 'moonlight',            name: 'Aidel Zimmerman' },
   { username: 'twasser',              name: 'Tzili Wasserlauf' },
   { username: 'findsbyrivka',         name: 'Rivka' },
-  { username: 'chezchaya',            name: 'Chaya Suzanne Lichtenstein' },
   { username: 'wardrobestaples',      name: 'Nechama Chapler' },
   { username: 'eishesstyle',          name: 'Eliana Sherman' },
   { username: 'thehomezest',          name: 'Elana Marcus' },

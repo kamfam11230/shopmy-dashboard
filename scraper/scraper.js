@@ -19,7 +19,7 @@ const SHOPMY_HEADERS = {
 const CREATORS = [
   'betweencarpools', 'faigyrabinowitz', 'rachelshalam', 'alysondweck',
   'bestmomsfinds', 'themommydictionary', 'shimal123', 'moonlight',
-  'twasser', 'findsbyrivka', 'chezchaya', 'wardrobestaples',
+  'twasser', 'findsbyrivka', 'wardrobestaples',
   'eishesstyle', 'thehomezest', 'familygetup', 'marblespoon',
   'sarahsoliani', 'shanilechan', 'devora', 'gowncloset',
   'rivkirabinowitz', 'ladiesshoppinglinks', 'bigcityshopper',
