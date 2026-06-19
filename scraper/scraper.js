@@ -26,6 +26,7 @@ const CREATORS = [
   'styledbynomi', 'rachelw', 'shiraadar', 'looksbybecs',
   'designerthreads', 'leahslinks', 'yglamm15',
   'fitsbyyaf', 'shanatoiv', 'thebestkeptsecret', 'thisthat',
+  'malkahhartman', 'siporah',
 ];
 
 const DAYS_BACK = 30;

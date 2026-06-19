@@ -2,6 +2,8 @@ export const CREATORS = [
   { username: 'bigcityshopper',       name: 'BIG CITY SHOPPER' },
   { username: 'themommydictionary',   name: 'Cami Bouskila' },
   { username: 'thebestkeptsecret',    name: 'The Best Kept Secret' },
+  { username: 'malkahhartman',        name: 'Malkah Hartman' },
+  { username: 'siporah',              name: 'Siporah' },
   { username: 'designerthreads',      name: 'Designer Threads' },
   { username: 'thisthat',             name: 'This That' },
   { username: 'betweencarpools',      name: 'Between Carpools' },
