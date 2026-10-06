@@ -4,3 +4,6 @@ dist/
 .env.local
 playwright/.auth/session.json
 playwright/screenshots/
+
+# Local Netlify folder
+.netlify

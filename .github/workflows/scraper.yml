@@ -2,9 +2,8 @@ name: ShopMy Scrape
 
 on:
   schedule:
-    # GitHub schedules run in UTC. Requested daily run times:
-    # 0:00, 12:00, and 18:00 UTC.
-    - cron: '0 0,12,18 * * *'
+    # GitHub schedules run in UTC. Run every 3 hours.
+    - cron: '0 */3 * * *'
   workflow_dispatch:
 
 jobs:
