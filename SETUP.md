@@ -3,7 +3,7 @@
 ## Prerequisites
 - Node.js 20+
 - A free [Supabase](https://supabase.com) account
-- A free [Netlify](https://netlify.com) account
+- A [Cloudflare Pages](https://pages.cloudflare.com/) account
 - A ShopMy account (for scraping)
 
 ---
@@ -56,18 +56,24 @@ the `SELECTORS` object at the top of `scraper/scraper.js`.
 
 ---
 
-## 5. Deploy to Netlify
+## 5. Deploy to Cloudflare Pages
 
 ```bash
 # From the shopmy-dashboard root:
 npm install
+npm run build
 ```
 
-In the Netlify dashboard:
-- **New site from Git** → connect your repo → build command: `npm run build`, publish dir: `dist`
-- **Environment variables** → add:
+In the Cloudflare dashboard:
+- **Workers & Pages** → **Create** → **Pages** → connect your repo
+- Build command: `npm run build`
+- Build output directory: `dist`
+- The API is served by the Pages Function in `functions/api/products.js` at `/api/products`
+- **Settings → Variables and Secrets** → add:
   - `SUPABASE_URL`
   - `SUPABASE_ANON_KEY`
+
+Leave `VITE_API_BASE_URL` unset in Cloudflare so the frontend uses the same-origin `/api` route.
 
 ---
 

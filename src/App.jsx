@@ -68,7 +68,7 @@ export default function App() {
   setError(null);
 
   const apiBase =
-    import.meta.env.VITE_API_BASE_URL || "/.netlify/functions";
+    import.meta.env.VITE_API_BASE_URL || "/api";
 
   try {
     const res = await fetch(`${apiBase}/products?days=${API_DAYS}`);
